@@ -143,6 +143,8 @@ The protected Knowledge route supports manual text, FAQs, and PDF/DOCX/TXT/Markd
 
 OpenAI API usage is billed separately from ChatGPT. A key can be valid while embedding calls still return `insufficient_quota`; add API credits in the OpenAI platform, restart the app if credentials changed, and select **Reprocess source**.
 
+For free local workflow testing, set `MOCK_EMBEDDINGS=true` and run `npm run dev`. The dashboard displays a green test-mode banner and creates deterministic 1,536-dimension vectors locally. This validates forms, extraction, chunking, storage, statuses, and source controls, but it does not test semantic retrieval quality. Vercel production deployments reject mock mode.
+
 ## Website ingestion (Phase 4)
 
 The crawler will accept only validated HTTP(S) URLs, resolve DNS, block private/link-local/metadata addresses, revalidate redirects, obey limits, deduplicate same-domain pages, and remove navigation/script/footer noise. It is intentionally not part of the Phase 1 foundation.

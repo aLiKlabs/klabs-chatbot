@@ -16,6 +16,10 @@ const openAIEnvironmentSchema = z.object({
   OPENAI_CHAT_MODEL: z.string().min(1),
   OPENAI_EMBEDDING_MODEL: z.string().min(1),
   OPENAI_EMBEDDING_DIMENSIONS: z.coerce.number().int().positive().max(4096),
+  MOCK_EMBEDDINGS: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((value) => value === "true"),
 });
 
 export type PublicEnvironment = z.infer<typeof publicEnvironmentSchema>;
@@ -39,12 +43,18 @@ export function getServerEnvironment(): ServerEnvironment {
 }
 
 export function getOpenAIEnvironment(): OpenAIEnvironment {
-  return openAIEnvironmentSchema.parse({
+  const environment = openAIEnvironmentSchema.parse({
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     OPENAI_CHAT_MODEL: process.env.OPENAI_CHAT_MODEL,
     OPENAI_EMBEDDING_MODEL: process.env.OPENAI_EMBEDDING_MODEL,
     OPENAI_EMBEDDING_DIMENSIONS: process.env.OPENAI_EMBEDDING_DIMENSIONS,
+    MOCK_EMBEDDINGS: process.env.MOCK_EMBEDDINGS,
   });
+
+  if (environment.MOCK_EMBEDDINGS && process.env.VERCEL_ENV === "production") {
+    throw new Error("Mock embeddings are disabled in production deployments.");
+  }
+  return environment;
 }
 
 export function isAllowedAdministrator(email: string | undefined): boolean {

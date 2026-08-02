@@ -1,5 +1,7 @@
+import { createHash } from "node:crypto";
 import OpenAI from "openai";
 import { getOpenAIEnvironment } from "@/lib/env";
+import { countTokens } from "@/lib/ingestion/chunk";
 import { getOpenAIClient } from "@/lib/openai/client";
 
 const MAX_EMBEDDING_BATCH = 64;
@@ -13,6 +15,19 @@ export interface EmbeddingResult {
 
 function shouldRetry(error: unknown): boolean {
   return error instanceof OpenAI.APIError && (error.status === 429 || error.status >= 500);
+}
+
+export function createMockEmbedding(input: string, dimensions: number): number[] {
+  const digest = createHash("sha256").update(input).digest();
+  let state = digest.readUInt32LE(0) || 1;
+  const vector = Array.from({ length: dimensions }, () => {
+    state ^= state << 13;
+    state ^= state >>> 17;
+    state ^= state << 5;
+    return ((state >>> 0) / 0xffffffff) * 2 - 1;
+  });
+  const magnitude = Math.sqrt(vector.reduce((sum, value) => sum + value * value, 0));
+  return vector.map((value) => value / magnitude);
 }
 
 async function embedBatch(input: string[]) {
@@ -38,6 +53,15 @@ async function embedBatch(input: string[]) {
 
 export async function createEmbeddings(input: string[]): Promise<EmbeddingResult> {
   const environment = getOpenAIEnvironment();
+  if (environment.MOCK_EMBEDDINGS) {
+    return {
+      embeddings: input.map((content) =>
+        createMockEmbedding(content, environment.OPENAI_EMBEDDING_DIMENSIONS),
+      ),
+      totalTokens: input.reduce((total, content) => total + countTokens(content), 0),
+      model: "mock-local-development",
+    };
+  }
   const embeddings: number[][] = [];
   let totalTokens = 0;
 

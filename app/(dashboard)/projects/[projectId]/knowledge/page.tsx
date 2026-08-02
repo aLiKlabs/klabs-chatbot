@@ -40,6 +40,13 @@ export default async function KnowledgePage({ params }: { params: Promise<{ proj
     <main className="page-wrap project-page">
       <ProjectHeader project={project} active="knowledge" />
 
+      {process.env.MOCK_EMBEDDINGS === "true" && (
+        <div className="mock-mode-banner">
+          <ShieldCheck size={16} />
+          <span><strong>Free local test mode is active.</strong> Embeddings are simulated so you can test the workflow without API charges.</span>
+        </div>
+      )}
+
       <section className="knowledge-hero">
         <div><p className="eyebrow">Knowledge base</p><h2>Teach the assistant with verified content.</h2><p>Documents and entries are cleaned, split into semantic chunks, and embedded for grounded answers.</p></div>
         <span><ShieldCheck size={22} /><strong>Private by default</strong><small>Files are accessible only to approved administrators.</small></span>
