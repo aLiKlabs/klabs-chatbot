@@ -62,7 +62,10 @@ export async function extractDocument(
   if (type === "pdf") {
     const parser = new PDFParse({ data, stopAtErrors: true });
     try {
-      const [textResult, infoResult] = await Promise.all([parser.getText(), parser.getInfo()]);
+      // pdf.js transfers parser data to its worker. Running both operations in parallel
+      // can attempt to transfer the same object twice and throw a DataCloneError.
+      const textResult = await parser.getText();
+      const infoResult = await parser.getInfo();
       const sections = textResult.pages
         .map((page) => ({ text: cleanExtractedText(page.text), pageNumber: page.num }))
         .filter(({ text }) => Boolean(text));
