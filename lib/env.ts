@@ -11,8 +11,16 @@ const serverEnvironmentSchema = publicEnvironmentSchema.extend({
   ADMIN_ALLOWED_EMAILS: z.string().default(""),
 });
 
+const openAIEnvironmentSchema = z.object({
+  OPENAI_API_KEY: z.string().min(20),
+  OPENAI_CHAT_MODEL: z.string().min(1),
+  OPENAI_EMBEDDING_MODEL: z.string().min(1),
+  OPENAI_EMBEDDING_DIMENSIONS: z.coerce.number().int().positive().max(4096),
+});
+
 export type PublicEnvironment = z.infer<typeof publicEnvironmentSchema>;
 export type ServerEnvironment = z.infer<typeof serverEnvironmentSchema>;
+export type OpenAIEnvironment = z.infer<typeof openAIEnvironmentSchema>;
 
 export function getPublicEnvironment(): PublicEnvironment {
   return publicEnvironmentSchema.parse({
@@ -27,6 +35,15 @@ export function getServerEnvironment(): ServerEnvironment {
     ...getPublicEnvironment(),
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
     ADMIN_ALLOWED_EMAILS: process.env.ADMIN_ALLOWED_EMAILS,
+  });
+}
+
+export function getOpenAIEnvironment(): OpenAIEnvironment {
+  return openAIEnvironmentSchema.parse({
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+    OPENAI_CHAT_MODEL: process.env.OPENAI_CHAT_MODEL,
+    OPENAI_EMBEDDING_MODEL: process.env.OPENAI_EMBEDDING_MODEL,
+    OPENAI_EMBEDDING_DIMENSIONS: process.env.OPENAI_EMBEDDING_DIMENSIONS,
   });
 }
 

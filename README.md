@@ -2,7 +2,7 @@
 
 An internal platform for K-Labs administrators to create isolated, knowledge-grounded AI assistants for client websites. Each project has separate configuration, domains, content, conversations, feedback, leads, and analytics. There is no public signup, billing, subscription, or customer dashboard.
 
-Phase 1 is implemented: secure administrator authentication, project creation and lifecycle management, a responsive dashboard, the complete initial Supabase schema, private storage buckets, pgvector retrieval foundations, and Row Level Security.
+Phases 1–2 are implemented: secure administrator authentication and project management plus manual text, FAQ, and private document ingestion with cleaning, semantic chunking, OpenAI embeddings, pgvector storage, source lifecycle controls, usage tracking, and Row Level Security.
 
 ## Architecture
 
@@ -11,10 +11,11 @@ Phase 1 is implemented: secure administrator authentication, project creation an
 - **Authorization:** PostgreSQL RLS permits data access only to authenticated users with the `administrator` role in Supabase app metadata or `profiles`.
 - **Database:** Supabase PostgreSQL with project-scoped tables, foreign keys, indexes, timestamps, and cascade rules.
 - **Storage:** private `chatbot-documents` and `chatbot-branding` Supabase Storage buckets.
+- **Knowledge ingestion:** server-side PDF/DOCX/TXT/Markdown extraction, deterministic hashing, token-aware semantic chunks, batched OpenAI embeddings, and transactional pgvector replacement.
 - **Retrieval foundation:** pgvector column and a project-filtered `match_document_chunks` function. Public browser access is revoked.
 - **Deployment target:** Vercel for Next.js and hosted Supabase for database, auth, and storage.
 
-Later phases add ingestion, OpenAI embeddings and Responses API streaming, the SSRF-safe crawler, embeddable widget, conversations, and analytics. See [PLAN.md](./PLAN.md).
+Later phases add Responses API streaming, retrieval, the SSRF-safe crawler, embeddable widget, conversations, and analytics. See [PLAN.md](./PLAN.md).
 
 ## Prerequisites
 
@@ -22,7 +23,7 @@ Later phases add ingestion, OpenAI embeddings and Responses API streaming, the S
 - npm 10 or newer
 - A Supabase project
 - Supabase CLI (recommended for local migrations)
-- An OpenAI API key for Phases 2–3
+- An OpenAI API key with available API credits for Phases 2–3
 
 ## Local installation
 
@@ -108,7 +109,9 @@ The app validates environment values when the relevant Supabase client is create
 2. Select **Create project**.
 3. Enter the client website, supported languages, initial bot name, welcome message, colour, and optional contact details.
 4. Open the generated project workspace.
-5. Edit details, activate/pause the project, or archive it.
+5. Open **Knowledge** to upload a supported document, add approved text, or add an FAQ.
+6. Monitor source status and use the reprocess, disable, enable, or delete controls as needed.
+7. Edit details, activate/pause the project, or archive it.
 
 New projects start in `draft`. Later public endpoints will accept only `active` projects and approved domains.
 
@@ -132,11 +135,13 @@ npm run test:e2e
 npm run build
 ```
 
-`test:e2e` is wired for Playwright; full browser scenarios arrive with the knowledge/chat/widget phases when those user journeys exist. Unit tests currently cover project validation, protocol restrictions, administrator allowlisting, RLS coverage, private buckets, and project-scoped vector search.
+`test:e2e` is wired for Playwright. Unit tests cover project validation, protocol restrictions, administrator allowlisting, RLS coverage, private buckets, project-scoped vector search, cleaning, deterministic hashing, token-aware chunking, upload validation, and the transactional ingestion migration.
 
 ## Knowledge ingestion (Phase 2)
 
-The protected Knowledge route is already project-scoped. Phase 2 will add manual text/FAQ input and PDF/DOCX/TXT/Markdown uploads, then extract, clean, hash, chunk, embed, and store content. Original documents use the private `chatbot-documents` bucket. Unchanged hashes will skip redundant embeddings.
+The protected Knowledge route supports manual text, FAQs, and PDF/DOCX/TXT/Markdown uploads. Browser uploads go directly to a signed path in the private `chatbot-documents` bucket, while all extraction and embedding remains server-side. Content is cleaned, deterministically hashed, split into token-bounded semantic chunks, embedded in batches with retry/backoff, and transactionally stored in pgvector. Unchanged sources and chunks reuse existing embeddings. The source library shows status, chunk count, processing errors, and reprocess/enable/disable/delete controls.
+
+OpenAI API usage is billed separately from ChatGPT. A key can be valid while embedding calls still return `insufficient_quota`; add API credits in the OpenAI platform, restart the app if credentials changed, and select **Reprocess source**.
 
 ## Website ingestion (Phase 4)
 
@@ -168,10 +173,10 @@ The future widget will call controlled server endpoints only. It will not query 
 
 ## Known limitations
 
-- Phase 1 does not ingest or embed content, call OpenAI, crawl websites, or serve a public widget.
-- Source and conversation totals are live, but they remain zero until those later-phase data flows are used.
+- Website crawling, retrieval/chat answers, and the public widget belong to later phases.
+- Conversation totals remain zero until the retrieval chatbot is implemented.
 - Search UI is visually prepared but disabled until server-side filtering is added.
-- Full Playwright flows require a configured Supabase test project and arrive with later phases.
+- Automated live OpenAI/Supabase flows require configured test credentials and API credits; local unit tests never call paid APIs.
 - Authentication currently uses email/password; magic-link authentication can be enabled without public registration in a later hardening pass.
 
 ## Troubleshooting
@@ -181,4 +186,5 @@ The future widget will call controlled server endpoints only. It will not query 
 - **Invalid Supabase URL during development:** set all three `NEXT_PUBLIC_*` variables in `.env.local`, then restart the development server.
 - **Vector dimension error:** make the migration’s `vector(1536)` and `OPENAI_EMBEDDING_DIMENSIONS` match before inserting embeddings.
 - **Storage upload denied:** verify the bucket name, authenticated session, administrator role, and storage policies from the migration.
+- **OpenAI credits unavailable:** API billing is separate from ChatGPT subscriptions. Add credits in the OpenAI platform, then reprocess the failed source.
 - **Build differs from local:** use a supported Node version and run `npm ci` from the committed lockfile.
