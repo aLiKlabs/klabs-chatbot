@@ -365,6 +365,58 @@ alter table public.leads enable row level security;
 alter table public.ingestion_jobs enable row level security;
 alter table public.usage_events enable row level security;
 
+-- Data API exposure is disabled at the project level. Grant table privileges
+-- explicitly, then let the RLS policies below decide which rows are accessible.
+grant usage on schema public to authenticated, service_role;
+revoke all on table
+  public.profiles,
+  public.projects,
+  public.chatbot_settings,
+  public.chatbot_instructions,
+  public.project_domains,
+  public.knowledge_sources,
+  public.source_pages,
+  public.document_chunks,
+  public.conversations,
+  public.messages,
+  public.feedback,
+  public.leads,
+  public.ingestion_jobs,
+  public.usage_events
+from anon;
+grant select, insert, update, delete on table
+  public.profiles,
+  public.projects,
+  public.chatbot_settings,
+  public.chatbot_instructions,
+  public.project_domains,
+  public.knowledge_sources,
+  public.source_pages,
+  public.document_chunks,
+  public.conversations,
+  public.messages,
+  public.feedback,
+  public.leads,
+  public.ingestion_jobs,
+  public.usage_events
+to authenticated;
+grant all privileges on table
+  public.profiles,
+  public.projects,
+  public.chatbot_settings,
+  public.chatbot_instructions,
+  public.project_domains,
+  public.knowledge_sources,
+  public.source_pages,
+  public.document_chunks,
+  public.conversations,
+  public.messages,
+  public.feedback,
+  public.leads,
+  public.ingestion_jobs,
+  public.usage_events
+to service_role;
+
 create policy profiles_admin_all on public.profiles for all to authenticated using (public.is_klabs_admin()) with check (public.is_klabs_admin());
 create policy profiles_read_self on public.profiles for select to authenticated using (id = auth.uid());
 create policy projects_admin_all on public.projects for all to authenticated using (public.is_klabs_admin()) with check (public.is_klabs_admin());

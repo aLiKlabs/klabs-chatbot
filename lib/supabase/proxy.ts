@@ -11,6 +11,16 @@ export async function updateSession(request: NextRequest) {
     return response;
   }
 
+  // A first-time visitor has no Supabase session to refresh. Avoid an
+  // unnecessary Auth network request so the login screen stays fast and
+  // remains available during temporary upstream interruptions.
+  const hasAuthCookie = request.cookies
+    .getAll()
+    .some(({ name }) => name.startsWith("sb-") && name.includes("auth-token"));
+  if (request.nextUrl.pathname === "/login" && !hasAuthCookie) {
+    return response;
+  }
+
   const supabase = createServerClient(url, anonKey, {
     cookies: {
       getAll: () => request.cookies.getAll(),

@@ -41,4 +41,10 @@ describe("database security migration", () => {
     expect(migration).toContain("'chatbot-documents', 'chatbot-documents', false");
     expect(migration).toContain("'chatbot-branding', 'chatbot-branding', false");
   });
+
+  it("revokes anonymous table access and grants authenticated access explicitly", () => {
+    expect(migration).toContain("from anon;");
+    expect(migration).toContain("to authenticated;");
+    expect(migration).toContain("Data API exposure is disabled");
+  });
 });
