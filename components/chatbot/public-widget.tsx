@@ -21,16 +21,34 @@ export function PublicWidget({ publicKey, pageUrl, initialLanguage }: { publicKe
   const [config, setConfig] = useState<WidgetConfig>();
   const [language, setLanguage] = useState(initialLanguage === "ar" ? "ar" : "en");
   const [open, setOpen] = useState(false);
+  const [closing, setClosing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [showLeadForm, setShowLeadForm] = useState(false);
   const transcriptRef = useRef<HTMLDivElement>(null);
+  const closeTimerRef = useRef<number | null>(null);
   const storageKey = `klabs-chat-session:${publicKey}`;
   const [sessionId, setSessionId] = useState(() => { try { return localStorage.getItem(storageKey) || uuid(); } catch { return uuid(); } });
   const [messages, setMessages] = useState<Message[]>([]);
   const rtl = language === "ar";
+
+  const openWidget = useCallback(() => {
+    if (closeTimerRef.current) window.clearTimeout(closeTimerRef.current);
+    setClosing(false);
+    setOpen(true);
+  }, []);
+
+  const closeWidget = useCallback(() => {
+    if (closing) return;
+    setClosing(true);
+    closeTimerRef.current = window.setTimeout(() => {
+      setOpen(false);
+      setClosing(false);
+      closeTimerRef.current = null;
+    }, 220);
+  }, [closing]);
 
   const loadConfig = useCallback(async (selectedLanguage: string) => {
     setLoading(true); setError("");
@@ -47,7 +65,8 @@ export function PublicWidget({ publicKey, pageUrl, initialLanguage }: { publicKe
   useEffect(() => { try { localStorage.setItem(storageKey, sessionId); } catch {} }, [sessionId, storageKey]);
   useEffect(() => { const timer = window.setTimeout(() => void loadConfig(language), 0); return () => window.clearTimeout(timer); }, [language, loadConfig]);
   useEffect(() => { parentResize(open); }, [open]);
-  useEffect(() => { const close = (event: KeyboardEvent) => { if (event.key === "Escape") setOpen(false); }; window.addEventListener("keydown", close); return () => window.removeEventListener("keydown", close); }, []);
+  useEffect(() => { const close = (event: KeyboardEvent) => { if (event.key === "Escape" && open) closeWidget(); }; window.addEventListener("keydown", close); return () => window.removeEventListener("keydown", close); }, [closeWidget, open]);
+  useEffect(() => () => { if (closeTimerRef.current) window.clearTimeout(closeTimerRef.current); }, []);
   useEffect(() => { transcriptRef.current?.scrollTo({ top: transcriptRef.current.scrollHeight, behavior: "smooth" }); }, [messages, sending]);
 
   const theme = useMemo(() => ({ "--widget-brand": config?.primaryColor || "#6758E8", "--widget-bg": config?.secondaryColor || "#FFFFFF", "--widget-text": config?.textColor || "#172033", "--widget-radius": `${config?.borderRadius ?? 16}px` }) as React.CSSProperties, [config]);
@@ -89,10 +108,10 @@ export function PublicWidget({ publicKey, pageUrl, initialLanguage }: { publicKe
     await fetch("/api/feedback", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ publicKey, sessionId, messageId: message.messageId, rating }) });
   }
 
-  if (!open) return <div className="public-widget-root widget-closed" style={theme}><button className="public-launcher" aria-label={rtl ? "فتح المحادثة" : "Open chat"} onClick={() => setOpen(true)}>{config?.launcherIcon === "bot" ? <Bot /> : <MessageCircle />}</button></div>;
+  if (!open) return <div className="public-widget-root widget-closed" style={theme}><button className="public-launcher" aria-label={rtl ? "فتح المحادثة" : "Open chat"} onClick={openWidget}>{config?.launcherIcon === "bot" ? <Bot /> : <MessageCircle />}</button></div>;
   return <div className="public-widget-root" style={theme} dir={rtl ? "rtl" : "ltr"}>
-    <section className="public-chat" aria-label={config?.botName || "Website chatbot"}>
-      <header className="public-chat-header"><span className="public-avatar">{config?.avatarUrl ? <img src={config.avatarUrl} alt="" /> /* eslint-disable-line @next/next/no-img-element */ : <Bot size={22} />}</span><div><strong>{config?.botName || "Website Assistant"}</strong><small><i /> {rtl ? "متصل" : "Online"}</small></div>{config?.supportedLanguages.includes("ar") && config.supportedLanguages.includes("en") && <button className="language-toggle" onClick={() => { setMessages([]); setLanguage(rtl ? "en" : "ar"); }}>{rtl ? "EN" : "ع"}</button>}<button aria-label={rtl ? "بدء محادثة جديدة" : "Restart conversation"} onClick={restart}><RefreshCw size={16} /></button><button aria-label={rtl ? "تصغير" : "Minimize"} onClick={() => setOpen(false)}><Minus size={17} /></button></header>
+    <section className={`public-chat${closing ? " widget-closing" : ""}`} aria-label={config?.botName || "Website chatbot"}>
+      <header className="public-chat-header"><span className="public-avatar">{config?.avatarUrl ? <img src={config.avatarUrl} alt="" /> /* eslint-disable-line @next/next/no-img-element */ : <Bot size={22} />}</span><div><strong>{config?.botName || "Website Assistant"}</strong><small><i /> {rtl ? "متصل" : "Online"}</small></div>{config?.supportedLanguages.includes("ar") && config.supportedLanguages.includes("en") && <button className="language-toggle" onClick={() => { setMessages([]); setLanguage(rtl ? "en" : "ar"); }}>{rtl ? "EN" : "ع"}</button>}<button aria-label={rtl ? "بدء محادثة جديدة" : "Restart conversation"} onClick={restart}><RefreshCw size={16} /></button><button aria-label={rtl ? "تصغير" : "Minimize"} onClick={closeWidget}><Minus size={17} /></button></header>
       <div className="public-transcript" ref={transcriptRef} aria-live="polite">
         {loading && <div className="public-state"><span className="widget-spinner" />{rtl ? "جارٍ التحميل…" : "Loading…"}</div>}
         {!loading && error && messages.length === 0 && <div className="public-state public-unavailable"><X size={23} /><strong>{rtl ? "المساعد غير متاح" : "Chatbot unavailable"}</strong><p>{error}</p></div>}
