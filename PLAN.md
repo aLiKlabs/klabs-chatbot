@@ -2,7 +2,7 @@
 
 This repository is delivered incrementally so each phase remains deployable and testable.
 
-## Phase 1 — Foundation (current)
+## Phase 1 — Foundation
 
 - [x] Inspect repository and select npm (no existing lockfile; requested workflow uses npm).
 - [x] Initialize Next.js App Router with strict TypeScript and Tailwind CSS.
@@ -17,13 +17,17 @@ Deliverable: an approved K-Labs administrator can authenticate and manage isolat
 
 ## Phase 2 — Knowledge ingestion
 
-- Manual text and FAQ sources.
-- PDF, DOCX, TXT, and Markdown uploads to private storage.
-- Extraction, cleaning, semantic chunking, hashing, embeddings, job states, and reprocessing.
+- [x] Manual text and FAQ sources.
+- [x] PDF, DOCX, TXT, and Markdown uploads to private storage.
+- [x] Extraction, cleaning, semantic chunking, hashing, embeddings, job states, and reprocessing.
 
-## Phase 3 — Retrieval chatbot
+## Phase 3 — Retrieval chatbot (current)
 
-- Project-scoped vector retrieval, bounded context, Responses API streaming, safe fallback, storage, and admin debug testing.
+- [x] Project-scoped vector retrieval and bounded context.
+- [x] Responses API answer generation with safe fallback behaviour.
+- [x] Conversation and message storage by project.
+- [x] Fully functional administrator Testing page and private retrieval debug panel.
+- [x] Development-only grounded local response mode for testing without API charges.
 
 ## Phase 4 — Website crawler
 

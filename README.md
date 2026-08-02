@@ -145,6 +145,8 @@ OpenAI API usage is billed separately from ChatGPT. A key can be valid while emb
 
 For free local workflow testing, set `MOCK_EMBEDDINGS=true` and run `npm run dev`. The dashboard displays a green test-mode banner and creates deterministic 1,536-dimension vectors locally. This validates forms, extraction, chunking, storage, statuses, and source controls, but it does not test semantic retrieval quality. Vercel production deployments reject mock mode.
 
+The protected **Testing** page provides a functional chatbot preview. With `MOCK_EMBEDDINGS=true`, it performs project-scoped lexical retrieval and extracts answers only from matching ready knowledge, so the chat workflow can be tested without OpenAI charges. It uses the configured safe fallback when no knowledge matches and saves conversations by project. Its administrator-only debug panel shows retrieved chunks, similarity scores, source labels, prompt size, model, token usage, and latency. Disable mock mode and reprocess all sources before testing real OpenAI vector retrieval and Responses API answers.
+
 ## Website ingestion (Phase 4)
 
 The crawler will accept only validated HTTP(S) URLs, resolve DNS, block private/link-local/metadata addresses, revalidate redirects, obey limits, deduplicate same-domain pages, and remove navigation/script/footer noise. It is intentionally not part of the Phase 1 foundation.
@@ -175,8 +177,7 @@ The future widget will call controlled server endpoints only. It will not query 
 
 ## Known limitations
 
-- Website crawling, retrieval/chat answers, and the public widget belong to later phases.
-- Conversation totals remain zero until the retrieval chatbot is implemented.
+- Website crawling and the public widget belong to later phases.
 - Search UI is visually prepared but disabled until server-side filtering is added.
 - Automated live OpenAI/Supabase flows require configured test credentials and API credits; local unit tests never call paid APIs.
 - Authentication currently uses email/password; magic-link authentication can be enabled without public registration in a later hardening pass.
