@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { BookOpenText, Boxes, CalendarClock, Database, File, FileQuestion, FileText, ShieldCheck } from "lucide-react";
+import { BookOpenText, Boxes, CalendarClock, Database, File, FileQuestion, FileText, Globe2, ShieldCheck } from "lucide-react";
 import { ProjectHeader } from "@/components/admin/project-header";
 import { SourceActions } from "@/components/admin/source-actions";
 import { KnowledgeForms } from "@/components/forms/knowledge-forms";
@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { KnowledgeSource, Project } from "@/types/database";
 
 function sourceIcon(type: KnowledgeSource["source_type"]) {
+  if (type === "website" || type === "webpage") return Globe2;
   if (type === "faq") return FileQuestion;
   if (type === "pdf" || type === "docx") return File;
   return FileText;
@@ -58,7 +59,7 @@ export default async function KnowledgePage({ params }: { params: Promise<{ proj
         <article><Database size={18} /><div><strong>{embeddingTokens.toLocaleString()}</strong><small>embedding tokens</small></div></article>
       </div>
 
-      <KnowledgeForms projectId={projectId} />
+      <KnowledgeForms projectId={projectId} websiteUrl={project.website_url} />
 
       <section className="source-library">
         <div className="section-heading"><div><p className="eyebrow">Source library</p><h2>Project knowledge</h2></div><span>{sources.length} source{sources.length === 1 ? "" : "s"}</span></div>

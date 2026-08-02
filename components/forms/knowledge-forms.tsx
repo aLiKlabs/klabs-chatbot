@@ -9,6 +9,7 @@ import {
   type KnowledgeActionState,
 } from "@/app/actions/knowledge";
 import { createClient } from "@/lib/supabase/client";
+import { WebsiteCrawler } from "@/components/forms/website-crawler";
 
 const initialState: KnowledgeActionState = {};
 
@@ -18,7 +19,7 @@ function FormMessage({ state }: { state: KnowledgeActionState }) {
   return null;
 }
 
-export function KnowledgeForms({ projectId }: { projectId: string }) {
+export function KnowledgeForms({ projectId, websiteUrl }: { projectId: string; websiteUrl: string }) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
   const [manualState, manualAction, manualPending] = useActionState(
@@ -74,6 +75,7 @@ export function KnowledgeForms({ projectId }: { projectId: string }) {
 
   return (
     <div className="knowledge-entry-grid">
+      <WebsiteCrawler projectId={projectId} websiteUrl={websiteUrl} />
       <article className="knowledge-entry-card upload-card">
         <span className="entry-icon"><UploadCloud size={20} /></span>
         <div><h2>Upload a document</h2><p>PDF, DOCX, TXT, or Markdown · up to 20 MB</p></div>

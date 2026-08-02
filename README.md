@@ -2,7 +2,7 @@
 
 An internal platform for K-Labs administrators to create isolated, knowledge-grounded AI assistants for client websites. Each project has separate configuration, domains, content, conversations, feedback, leads, and analytics. There is no public signup, billing, subscription, or customer dashboard.
 
-Phases 1–2 are implemented: secure administrator authentication and project management plus manual text, FAQ, and private document ingestion with cleaning, semantic chunking, OpenAI embeddings, pgvector storage, source lifecycle controls, usage tracking, and Row Level Security.
+Phases 1–4 are implemented: secure administrator authentication and project management, private knowledge ingestion, project-grounded chatbot testing, and SSRF-safe website crawling with selective page import.
 
 ## Architecture
 
@@ -149,7 +149,7 @@ The protected **Testing** page provides a functional chatbot preview. With `MOCK
 
 ## Website ingestion (Phase 4)
 
-The crawler will accept only validated HTTP(S) URLs, resolve DNS, block private/link-local/metadata addresses, revalidate redirects, obey limits, deduplicate same-domain pages, and remove navigation/script/footer noise. It is intentionally not part of the Phase 1 foundation.
+The Knowledge page can preview up to 20 readable same-domain pages and selectively import them. The server resolves every requested host itself, blocks private/link-local/metadata/reserved addresses, rejects custom ports and credentials, revalidates every redirect, limits time and response size, respects `robots.txt`, removes common navigation/script/footer noise, and deduplicates page content before it reaches the normal project-scoped chunking and embedding pipeline.
 
 ## Widget installation (Phase 5)
 

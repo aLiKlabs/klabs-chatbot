@@ -21,7 +21,7 @@ Deliverable: an approved K-Labs administrator can authenticate and manage isolat
 - [x] PDF, DOCX, TXT, and Markdown uploads to private storage.
 - [x] Extraction, cleaning, semantic chunking, hashing, embeddings, job states, and reprocessing.
 
-## Phase 3 — Retrieval chatbot (current)
+## Phase 3 — Retrieval chatbot
 
 - [x] Project-scoped vector retrieval and bounded context.
 - [x] Responses API answer generation with safe fallback behaviour.
@@ -31,7 +31,9 @@ Deliverable: an approved K-Labs administrator can authenticate and manage isolat
 
 ## Phase 4 — Website crawler
 
-- SSRF-safe crawling, robots/sitemap handling, content extraction, deduplication, limits, and crawl previews.
+- [x] SSRF-safe DNS resolution and redirect validation.
+- [x] Same-domain discovery, robots.txt handling, readable-content extraction, deduplication, and crawl limits.
+- [x] Administrator page preview, selective import, chunking, embeddings, and source lifecycle integration.
 
 ## Phase 5 — Embeddable widget
 
