@@ -37,7 +37,11 @@ Deliverable: an approved K-Labs administrator can authenticate and manage isolat
 
 ## Phase 5 — Embeddable widget
 
-- Isolated asynchronous widget, configuration endpoint, streaming chat, English/Arabic, RTL, feedback, contact actions, and installation code.
+- [x] Appearance and answer-instruction configuration with a live dashboard preview.
+- [x] Active-project configuration, chat, and feedback endpoints with domain validation and throttling.
+- [x] Isolated asynchronous iframe loader and responsive English/Arabic RTL chat interface.
+- [x] Streaming answer display, restart, suggestions, feedback, source-link option, and contact escalation.
+- [x] Copy-ready installation code and approved-domain management.
 
 ## Phase 6 — Conversations and analytics
 

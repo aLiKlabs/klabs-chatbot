@@ -196,7 +196,7 @@ export async function processKnowledgeSource(
         page_number: chunk.pageUrl.match(/#page=(\d+)$/)?.[1]
           ? Number(chunk.pageUrl.match(/#page=(\d+)$/)?.[1])
           : null,
-        original_url: source.original_url,
+        original_url: /^https?:\/\//i.test(chunk.pageUrl) ? chunk.pageUrl : source.original_url,
       },
     }));
     const { error: replaceError } = await supabase.rpc("replace_source_chunks", {

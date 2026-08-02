@@ -89,6 +89,16 @@ export async function createProject(
     };
   }
 
+  try {
+    await supabase.from("project_domains").upsert({
+      project_id: project.id,
+      domain: new URL(input.websiteUrl).hostname.toLowerCase(),
+      status: "active",
+    }, { onConflict: "project_id,domain" });
+  } catch {
+    // The primary project URL remains an implicit approved domain.
+  }
+
   revalidatePath("/dashboard");
   redirect(`/projects/${project.id}/overview`);
 }
@@ -118,6 +128,11 @@ export async function updateProject(
     .eq("id", projectId);
 
   if (error) return { error: "The project could not be updated." };
+  try {
+    await supabase.from("project_domains").upsert({ project_id: projectId, domain: new URL(input.websiteUrl).hostname.toLowerCase(), status: "active" }, { onConflict: "project_id,domain" });
+  } catch {
+    // The primary project URL remains an implicit approved domain.
+  }
   revalidatePath("/dashboard");
   revalidatePath(`/projects/${projectId}/overview`);
   return {};

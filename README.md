@@ -2,7 +2,7 @@
 
 An internal platform for K-Labs administrators to create isolated, knowledge-grounded AI assistants for client websites. Each project has separate configuration, domains, content, conversations, feedback, leads, and analytics. There is no public signup, billing, subscription, or customer dashboard.
 
-Phases 1–4 are implemented: secure administrator authentication and project management, private knowledge ingestion, project-grounded chatbot testing, and SSRF-safe website crawling with selective page import.
+Phases 1–5 are implemented: secure administration, private knowledge ingestion, project-grounded chatbot testing, SSRF-safe website crawling, and an isolated public website widget with controlled server endpoints.
 
 ## Architecture
 
@@ -153,7 +153,7 @@ The Knowledge page can preview up to 20 readable same-domain pages and selective
 
 ## Widget installation (Phase 5)
 
-The installation route will generate:
+The Installation page generates:
 
 ```html
 <script
@@ -163,7 +163,9 @@ The installation route will generate:
 </script>
 ```
 
-The future widget will call controlled server endpoints only. It will not query Supabase tables directly or contain secrets.
+The asynchronous loader creates a style-isolated iframe and uses the project’s public key only as an identifier. The iframe fetches an active project’s safe configuration, streams answers from controlled server endpoints, supports English and Arabic RTL, collects answer feedback, and exposes configured WhatsApp, email, telephone, and contact-page actions. It never queries Supabase directly or receives server credentials.
+
+The project website is implicitly approved. Add staging or alternate domains on the Installation page. Draft, paused, archived, unknown, and off-domain widgets are rejected.
 
 ## Vercel deployment
 
