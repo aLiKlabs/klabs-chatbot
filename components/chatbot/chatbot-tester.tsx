@@ -7,7 +7,6 @@ import {
   ChevronUp,
   Clock3,
   Database,
-  ExternalLink,
   MessageCircleMore,
   RefreshCw,
   Send,
@@ -32,7 +31,6 @@ type Message = {
   id: string;
   role: "user" | "assistant";
   content: string;
-  sources?: Source[];
   unanswered?: boolean;
 };
 
@@ -92,7 +90,6 @@ export function ChatbotTester(props: ChatbotTesterProps) {
           id: id(),
           role: "assistant",
           content: payload.answer,
-          sources: payload.sources,
           unanswered: payload.unanswered,
         },
       ]);
@@ -141,20 +138,6 @@ export function ChatbotTester(props: ChatbotTesterProps) {
               <div>
                 <p>{message.content}</p>
                 {message.unanswered && <small className="fallback-label"><ShieldCheck size={12} /> Safe fallback used</small>}
-                {!!message.sources?.length && (
-                  <div className="message-sources">
-                    <strong>Sources</strong>
-                    {message.sources.map((source, index) =>
-                      source.url ? (
-                        <a href={source.url} target="_blank" rel="noreferrer" key={`${source.title}-${index}`}>
-                          {source.title}{source.pageNumber ? ` · Page ${source.pageNumber}` : ""}<ExternalLink size={11} />
-                        </a>
-                      ) : (
-                        <span key={`${source.title}-${index}`}>{source.title}{source.pageNumber ? ` · Page ${source.pageNumber}` : ""}</span>
-                      ),
-                    )}
-                  </div>
-                )}
               </div>
             </article>
           ))}

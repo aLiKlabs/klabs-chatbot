@@ -22,7 +22,20 @@ describe("retrieval chatbot", () => {
       },
     ]);
     expect(answer).toContain("approved website contact form");
+    expect(answer).not.toMatch(/based on|verified knowledge/i);
     expect(createLocalGroundedAnswer("What is the price?", [])).toBeNull();
+  });
+
+  it("returns concise contact details without repeating facts", () => {
+    const answer = createLocalGroundedAnswer("What is the K-Labs phone number?", [
+      {
+        content: "Contact hello@klabs.co when a human response is required.\nEmail hello@klabs.co or call +973 3699 5799.\nPlease contact hello@klabs.co.",
+        similarity: 0.9,
+        metadata: {},
+      },
+    ]);
+    expect(answer).toBe("You can contact the team by email hello@klabs.co or call +973 3699 5799.");
+    expect(answer?.match(/hello@klabs\.co/g)).toHaveLength(1);
   });
 
   it("keeps protected rules ahead of untrusted prompt-injection text", () => {
