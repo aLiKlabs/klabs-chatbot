@@ -2,7 +2,7 @@
 
 An internal platform for K-Labs administrators to create isolated, knowledge-grounded AI assistants for client websites. Each project has separate configuration, domains, content, conversations, feedback, leads, and analytics. There is no public signup, billing, subscription, or customer dashboard.
 
-Phases 1–5 are implemented: secure administration, private knowledge ingestion, project-grounded chatbot testing, SSRF-safe website crawling, and an isolated public website widget with controlled server endpoints.
+Phases 1–6 are implemented: secure administration, private knowledge ingestion, project-grounded chatbot testing, SSRF-safe crawling, an isolated public widget, and project-scoped conversation and analytics reporting.
 
 ## Architecture
 
@@ -166,6 +166,12 @@ The Installation page generates:
 The asynchronous loader creates a style-isolated iframe and uses the project’s public key only as an identifier. The iframe fetches an active project’s safe configuration, streams answers from controlled server endpoints, supports English and Arabic RTL, collects answer feedback, and exposes configured WhatsApp, email, telephone, and contact-page actions. It never queries Supabase directly or receives server credentials.
 
 The project website is implicitly approved. Add staging or alternate domains on the Installation page. Draft, paused, archived, unknown, and off-domain widgets are rejected.
+
+## Conversations and analytics (Phase 6)
+
+The Conversations page provides project-scoped filtering by date, language, unanswered status, feedback, and collected leads, with complete administrator-only transcripts and response metadata. The Analytics page reports conversation and session counts, questions and answers, feedback, leads, answer rate, daily activity, common questions, frequently retrieved knowledge, latency, token usage, and estimated API cost for a selected date range.
+
+Set `OPENAI_INPUT_COST_PER_MILLION`, `OPENAI_OUTPUT_COST_PER_MILLION`, and `OPENAI_EMBEDDING_COST_PER_MILLION` to current USD rates when cost estimates are needed. Stored `usage_events.estimated_cost` values take precedence. Free local mode remains $0.
 
 ## Vercel deployment
 

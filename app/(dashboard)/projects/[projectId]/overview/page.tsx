@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { AlertTriangle, BookOpenText, Braces, MessageSquareText, MousePointerClick, ThumbsDown } from "lucide-react";
+import { Activity, AlertTriangle, BookOpenText, Bot, Braces, CheckCircle2, CircleHelp, MessageSquareText, MousePointerClick, ThumbsDown, UserRound } from "lucide-react";
 import { setProjectStatus } from "@/app/actions/projects";
 import { ProjectHeader } from "@/components/admin/project-header";
 import { EditProjectForm } from "@/components/forms/edit-project-form";
@@ -13,19 +13,32 @@ export default async function ProjectOverviewPage({ params }: { params: Promise<
   if (!data) notFound();
   const project = data as Project;
 
-  const [sources, chunks, conversations, feedback] = await Promise.all([
+  const [sources, chunks, conversations, feedback, answered, unanswered, leads, recentUsage, recentJobs] = await Promise.all([
     supabase.from("knowledge_sources").select("id", { count: "exact", head: true }).eq("project_id", projectId).eq("status", "ready"),
     supabase.from("document_chunks").select("id", { count: "exact", head: true }).eq("project_id", projectId),
     supabase.from("conversations").select("id", { count: "exact", head: true }).eq("project_id", projectId),
     supabase.from("feedback").select("id", { count: "exact", head: true }).eq("project_id", projectId).eq("rating", "negative"),
+    supabase.from("messages").select("id", { count: "exact", head: true }).eq("project_id", projectId).eq("role", "assistant").eq("is_unanswered", false),
+    supabase.from("messages").select("id", { count: "exact", head: true }).eq("project_id", projectId).eq("role", "assistant").eq("is_unanswered", true),
+    supabase.from("leads").select("id", { count: "exact", head: true }).eq("project_id", projectId),
+    supabase.from("usage_events").select("event_type,created_at").eq("project_id", projectId).order("created_at", { ascending: false }).limit(5),
+    supabase.from("ingestion_jobs").select("job_type,status,created_at").eq("project_id", projectId).order("created_at", { ascending: false }).limit(5),
   ]);
 
   const cards = [
     ["Ready sources", sources.count ?? 0, BookOpenText, "violet"],
     ["Knowledge chunks", chunks.count ?? 0, Braces, "blue"],
     ["Conversations", conversations.count ?? 0, MessageSquareText, "teal"],
+    ["Questions answered", answered.count ?? 0, Bot, "blue"],
+    ["Unanswered", unanswered.count ?? 0, CircleHelp, "amber"],
     ["Negative feedback", feedback.count ?? 0, ThumbsDown, "amber"],
+    ["Leads collected", leads.count ?? 0, UserRound, "teal"],
+    ["Widget status", project.status === "active" ? "Live" : "Offline", CheckCircle2, project.status === "active" ? "teal" : "violet"],
   ] as const;
+  const recentActivity = [
+    ...(recentUsage.data || []).map((item) => ({ label: item.event_type.replaceAll("_", " "), created_at: item.created_at, tone: "chat" })),
+    ...(recentJobs.data || []).map((item) => ({ label: `${item.job_type} ${item.status}`, created_at: item.created_at, tone: "knowledge" })),
+  ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 6);
 
   return (
     <main className="page-wrap project-page">
@@ -53,6 +66,7 @@ export default async function ProjectOverviewPage({ params }: { params: Promise<
           </div>
         </section>
       </div>
+      <section className="panel recent-activity-panel"><div className="panel-heading"><div><p className="eyebrow">Recent activity</p><h2>Latest project events</h2></div><Activity size={18} /></div>{recentActivity.length ? <ul>{recentActivity.map((item, index) => <li key={`${item.created_at}-${index}`}><span className={item.tone}><Activity size={13} /></span><div><strong>{item.label}</strong><small>{new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" }).format(new Date(item.created_at))}</small></div></li>)}</ul> : <p className="empty-copy">Activity will appear after knowledge processing or chatbot testing.</p>}</section>
       <section className="panel settings-panel"><div className="panel-heading"><div><p className="eyebrow">Configuration</p><h2>Project details</h2></div></div><EditProjectForm project={project} /></section>
     </main>
   );

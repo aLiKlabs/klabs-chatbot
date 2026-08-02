@@ -45,7 +45,11 @@ Deliverable: an approved K-Labs administrator can authenticate and manage isolat
 
 ## Phase 6 — Conversations and analytics
 
-- Transcript browser, unanswered questions, feedback, leads, per-project analytics, and usage/cost reporting.
+- [x] Project-scoped conversation list with date, language, quality, unanswered, feedback, and lead filters.
+- [x] Full administrator transcript view with model, latency, feedback, and submitted lead details.
+- [x] Date-range analytics for conversations, sessions, questions, answers, feedback, unanswered questions, and leads.
+- [x] Daily activity trends, answer rate, common questions, retrieved-source ranking, tokens, latency, and configurable cost estimates.
+- [x] Expanded project overview metrics and recent activity.
 
 ## Phase 7 — Hardening
 
