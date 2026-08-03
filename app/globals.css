@@ -224,3 +224,216 @@ html:has(.public-widget-root), body:has(.public-widget-root) { width: 100%; heig
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* Dashboard dark theme */
+.dashboard-shell {
+  --ink: #f8f5f6;
+  --muted: #aaa1a6;
+  --line: #382a31;
+  --soft: #120e10;
+  --surface: #1b1518;
+  --brand: #ED3B63;
+  --brand-dark: #d72f55;
+  --brand-soft: rgba(237, 59, 99, .14);
+  --green: #57d7a5;
+  --amber: #f3b45f;
+  --red: #ff7185;
+  --shadow: 0 18px 50px rgba(0, 0, 0, .36);
+  color: var(--ink);
+  background: #100c0e;
+  color-scheme: dark;
+}
+
+.dashboard-shell .dashboard-content {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 88% 3%, rgba(237, 59, 99, .08), transparent 25rem),
+    #100c0e;
+}
+
+.dashboard-shell .sidebar {
+  border-color: var(--line);
+  background: #151013;
+  box-shadow: 14px 0 42px rgba(0, 0, 0, .18);
+}
+
+.dashboard-shell .brand-mark,
+.dashboard-shell .project-heading-icon {
+  background: linear-gradient(145deg, #f45176, #d72f55);
+  box-shadow: 0 12px 28px rgba(237, 59, 99, .22);
+}
+
+.dashboard-shell .sidebar-note {
+  border-color: rgba(237, 59, 99, .25);
+  background: linear-gradient(145deg, rgba(237, 59, 99, .14), rgba(237, 59, 99, .055));
+}
+
+.dashboard-shell .nav-link:hover,
+.dashboard-shell .nav-link-active {
+  color: #ff6f8f;
+  background: rgba(237, 59, 99, .13);
+}
+
+.dashboard-shell :is(input, textarea, select) {
+  color: var(--ink);
+  border-color: var(--line);
+  background: #21191d;
+}
+
+.dashboard-shell :is(input, textarea)::placeholder { color: #746c70; }
+.dashboard-shell :is(input, textarea, select):focus {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(237, 59, 99, .13);
+}
+
+.dashboard-shell .button-secondary,
+.dashboard-shell .search-box,
+.dashboard-shell :is(.source-actions, .approved-domain-list) button,
+.dashboard-shell .debug-heading button {
+  color: var(--ink);
+  border-color: var(--line);
+  background: #21191d;
+}
+
+.dashboard-shell .button-secondary:hover,
+.dashboard-shell :is(.source-actions, .approved-domain-list) button:hover,
+.dashboard-shell .debug-heading button:hover {
+  color: var(--brand);
+  border-color: rgba(237, 59, 99, .55);
+  background: rgba(237, 59, 99, .09);
+}
+
+.dashboard-shell :is(
+  .project-card,
+  .project-form,
+  .metric-card,
+  .panel,
+  .coming-panel,
+  .knowledge-metrics article,
+  .knowledge-entry-card,
+  .source-library,
+  .chat-preview,
+  .chat-debug,
+  .settings-card,
+  .conversation-filters,
+  .conversation-list,
+  .transcript-panel,
+  .analytics-metrics article,
+  .analytics-panel,
+  .install-code-card,
+  .domain-card,
+  .approved-domain-list
+) {
+  border-color: var(--line);
+  background: var(--surface);
+  box-shadow: 0 14px 38px rgba(0, 0, 0, .16);
+}
+
+.dashboard-shell :is(.knowledge-hero, .testing-hero, .conversation-hero, .analytics-hero) {
+  border-color: rgba(237, 59, 99, .24);
+  background:
+    radial-gradient(circle at 90% 12%, rgba(237, 59, 99, .18), transparent 30%),
+    linear-gradient(135deg, #1d161a, #171215);
+}
+
+.dashboard-shell :is(.knowledge-hero, .testing-hero, .conversation-hero) > span {
+  border-color: rgba(237, 59, 99, .24);
+  background: rgba(237, 59, 99, .08);
+}
+
+.dashboard-shell .empty-state {
+  border-color: var(--line);
+  background: radial-gradient(circle at 50% 40%, rgba(237, 59, 99, .13), #171215 38%, #100c0e 72%);
+}
+
+.dashboard-shell .empty-chip,
+.dashboard-shell .crawler-page-list > label,
+.dashboard-shell .debug-chunks article {
+  border-color: var(--line);
+  background: #21191d;
+}
+
+.dashboard-shell .crawler-page-list > label.selected {
+  border-color: rgba(237, 59, 99, .6);
+  background: rgba(237, 59, 99, .08);
+}
+
+.dashboard-shell .crawler-check { border-color: #5b4a52; background: #241b20; }
+.dashboard-shell .upload-drop {
+  border-color: rgba(237, 59, 99, .42);
+  background: rgba(237, 59, 99, .055);
+}
+.dashboard-shell .upload-drop:hover { border-color: var(--brand); background: rgba(237, 59, 99, .1); }
+
+.dashboard-shell :is(.status-draft, .source-status) { color: #b4aeb1; background: #2a2327; }
+.dashboard-shell :is(.status-active, .source-status-ready, .conversation-state) { background: rgba(87, 215, 165, .12); }
+.dashboard-shell :is(.status-paused, .source-status-processing, .source-status-pending, .tag.unanswered, .conversation-state.unanswered) { background: rgba(243, 180, 95, .12); }
+.dashboard-shell :is(.status-archived, .source-status-failed, .tag.negative) { background: rgba(255, 113, 133, .12); }
+.dashboard-shell .tag.positive { background: rgba(87, 215, 165, .12); }
+
+.dashboard-shell .progress-track { background: #30262b; }
+.dashboard-shell .metric-icon.blue { color: #72b7ff; background: rgba(65, 145, 225, .14); }
+.dashboard-shell .metric-icon.teal { background: rgba(87, 215, 165, .12); }
+.dashboard-shell .metric-icon.amber { background: rgba(243, 180, 95, .12); }
+.dashboard-shell :is(.form-message.error, .notice-error, .chat-error) { background: rgba(255, 113, 133, .1); border-color: rgba(255, 113, 133, .28); }
+.dashboard-shell .form-message.success,
+.dashboard-shell .mock-mode-banner,
+.dashboard-shell .install-status.active { background: rgba(87, 215, 165, .1); border-color: rgba(87, 215, 165, .28); }
+.dashboard-shell .install-status.inactive { background: rgba(243, 180, 95, .1); border-color: rgba(243, 180, 95, .28); }
+
+.dashboard-shell .chat-transcript,
+.dashboard-shell .admin-transcript { background: linear-gradient(#151114, #181215); }
+.dashboard-shell :is(.chat-message p, .typing-indicator, .admin-transcript article p) {
+  border-color: var(--line);
+  background: #221a1e;
+}
+.dashboard-shell :is(.chat-message-user p, .admin-transcript article.visitor p) {
+  color: white;
+  border-color: var(--brand);
+  background: var(--brand);
+}
+.dashboard-shell .chat-composer { border-color: var(--line); background: #191316; }
+.dashboard-shell .chat-date span,
+.dashboard-shell .admin-transcript article footer > span { background: #2a2226; }
+.dashboard-shell .chat-suggestions button {
+  color: var(--brand);
+  border-color: rgba(237, 59, 99, .35);
+  background: #21191d;
+}
+.dashboard-shell .debug-metrics article,
+.dashboard-shell .toggle-row,
+.dashboard-shell .usage-panel article { background: #21191d; }
+.dashboard-shell .debug-chunks article header span { background: rgba(87, 215, 165, .12); }
+
+.dashboard-shell .live-preview-wrap {
+  border-color: var(--line);
+  background: #171215;
+}
+
+/* The appearance preview remains light so it accurately represents the public widget. */
+.dashboard-shell .mini-widget {
+  --line: #dedbe9;
+  --muted: #697085;
+  color-scheme: light;
+}
+
+.dashboard-shell .conversation-list > a:hover,
+.dashboard-shell .conversation-list > a.active { background: rgba(237, 59, 99, .075); }
+.dashboard-shell .lead-details article { background: rgba(237, 59, 99, .1); }
+.dashboard-shell .lead-details blockquote { border-color: rgba(237, 59, 99, .55); }
+
+.dashboard-shell .trend-chart {
+  background: repeating-linear-gradient(to bottom, #30262b 0, #30262b 1px, transparent 1px, transparent 25%);
+}
+.dashboard-shell .trend-chart > div > span { background: linear-gradient(var(--brand), #a92045); }
+.dashboard-shell .quality-ring { background: conic-gradient(var(--brand) var(--quality), #30262b 0); }
+.dashboard-shell .quality-ring::before { background: var(--surface); }
+
+.dashboard-shell .install-code-card pre { background: #0d0a0c; }
+
+@media (max-width: 800px) {
+  .dashboard-shell .mobile-header {
+    border-color: var(--line);
+    background: rgba(21, 16, 19, .92);
+  }
+}
