@@ -8,7 +8,7 @@ export function Brand({ compact = false }: { compact?: boolean }) {
       {!compact ? (
         <span className="brand-copy">
           <strong>K-Labs</strong>
-          <small>Website AI</small>
+          <small>ChatBot</small>
         </span>
       ) : null}
     </Link>
