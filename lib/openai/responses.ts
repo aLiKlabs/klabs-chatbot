@@ -12,10 +12,15 @@ export async function createGroundedResponse(prompt: string) {
     input: prompt,
     max_output_tokens: maximumOutputTokens,
   });
+  const inputDetails = response.usage?.input_tokens_details as
+    | { cached_tokens?: number; cache_write_tokens?: number }
+    | undefined;
   return {
     text: response.output_text.trim(),
     model: environment.OPENAI_CHAT_MODEL,
     inputTokens: response.usage?.input_tokens ?? 0,
     outputTokens: response.usage?.output_tokens ?? 0,
+    cachedInputTokens: inputDetails?.cached_tokens ?? 0,
+    cacheWriteTokens: inputDetails?.cache_write_tokens ?? 0,
   };
 }

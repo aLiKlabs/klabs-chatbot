@@ -16,7 +16,9 @@ describe("project analytics", () => {
   });
   it("calculates latency and token totals", () => {
     expect(averageLatency([{ role: "assistant", content: "A", created_at: now, latency_ms: 100 }, { role: "assistant", content: "B", created_at: now, latency_ms: 300 }])).toBe(200);
-    expect(calculateUsage([{ input_tokens: 10, output_tokens: 20, embedding_tokens: 30, estimated_cost: "0.25", created_at: now }])).toMatchObject({ inputTokens: 10, outputTokens: 20, embeddingTokens: 30, estimatedCost: 0.25 });
+    const usage = calculateUsage([{ input_tokens: 10, output_tokens: 20, embedding_tokens: 30, estimated_cost: "0.25", created_at: now }]);
+    expect(usage).toMatchObject({ inputTokens: 10, outputTokens: 20, embeddingTokens: 30 });
+    expect(usage.estimatedCost).toBeCloseTo(0.0000266);
   });
   it("builds an inclusive trend range ending on the selected date", () => {
     const series = buildDailySeries([], [], 3, new Date("2026-08-02T00:00:00Z"));

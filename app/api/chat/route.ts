@@ -3,6 +3,7 @@ import { buildGroundedPrompt } from "@/lib/chat/prompt";
 import { createLocalGroundedAnswer, isArabic } from "@/lib/chat/local-answer";
 import { estimateTokens } from "@/lib/chat/token-estimate";
 import { getOpenAIEnvironment } from "@/lib/env";
+import { calculateLunaCost, LUNA_PRICING } from "@/lib/openai/pricing";
 import { consumeWidgetRateLimit, requestAddress } from "@/lib/rate-limit/widget";
 import { retrieveProjectKnowledge, type RetrievedChunk } from "@/lib/retrieval";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -43,6 +44,8 @@ export async function POST(request: Request) {
     let model = "safe-fallback";
     let inputTokens = estimateTokens(parsed.data.message);
     let outputTokens = estimateTokens(answer);
+    let cachedInputTokens = 0;
+    let cacheWriteTokens = 0;
     let unanswered = retrieval.chunks.length === 0;
     if (retrieval.chunks.length) {
       const prompt = buildGroundedPrompt({ question: parsed.data.message, chunks: retrieval.chunks, history: parsed.data.history, projectInstruction: widget.instructions.system_instruction });
@@ -59,6 +62,8 @@ export async function POST(request: Request) {
         model = generated.model;
         inputTokens = generated.inputTokens;
         outputTokens = generated.outputTokens;
+        cachedInputTokens = generated.cachedInputTokens;
+        cacheWriteTokens = generated.cacheWriteTokens;
         unanswered = !generated.text;
       }
     }
@@ -77,6 +82,9 @@ export async function POST(request: Request) {
     const userMessageId = crypto.randomUUID();
     const assistantMessageId = crypto.randomUUID();
     const latencyMs = Date.now() - startedAt;
+    const estimatedCost = model === LUNA_PRICING.model
+      ? calculateLunaCost({ inputTokens, cachedInputTokens, cacheWriteTokens, outputTokens, embeddingTokens: retrieval.embeddingTokens }).totalCost
+      : null;
     const { error: messageError } = await supabase.from("messages").insert([
       { id: userMessageId, project_id: widget.project.id, conversation_id: conversationId, role: "user", content: parsed.data.message, sources: [], retrieval_score: null, model: null, input_tokens: null, output_tokens: null, latency_ms: null, is_unanswered: false },
       { id: assistantMessageId, project_id: widget.project.id, conversation_id: conversationId, role: "assistant", content: answer, sources: uniqueSources, retrieval_score: retrieval.chunks[0]?.similarity ?? null, model, input_tokens: inputTokens, output_tokens: outputTokens, latency_ms: latencyMs, is_unanswered: unanswered },
@@ -84,7 +92,7 @@ export async function POST(request: Request) {
     if (messageError) throw messageError;
     await Promise.all([
       supabase.from("conversations").update({ status: unanswered ? "unanswered" : "active", language, last_message_at: now }).eq("id", conversationId),
-      supabase.from("usage_events").insert({ project_id: widget.project.id, conversation_id: conversationId, event_type: unanswered ? "chat_unanswered" : "chat_answered", model, input_tokens: inputTokens, output_tokens: outputTokens, embedding_tokens: retrieval.embeddingTokens }),
+      supabase.from("usage_events").insert({ project_id: widget.project.id, conversation_id: conversationId, event_type: unanswered ? "chat_unanswered" : "chat_answered", model, input_tokens: inputTokens, output_tokens: outputTokens, embedding_tokens: retrieval.embeddingTokens, estimated_cost: estimatedCost }),
     ]);
 
     const encoder = new TextEncoder();

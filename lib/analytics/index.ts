@@ -1,3 +1,5 @@
+import { calculateLunaCost } from "@/lib/openai/pricing";
+
 export type AnalyticsMessage = {
   role: string;
   content: string;
@@ -61,11 +63,8 @@ export function calculateUsage(rows: UsageRow[]) {
     inputTokens: sum.inputTokens + (row.input_tokens || 0), outputTokens: sum.outputTokens + (row.output_tokens || 0),
     embeddingTokens: sum.embeddingTokens + (row.embedding_tokens || 0), reportedCost: sum.reportedCost + Number(row.estimated_cost || 0),
   }), { inputTokens: 0, outputTokens: 0, embeddingTokens: 0, reportedCost: 0 });
-  const inputRate = Number(process.env.OPENAI_INPUT_COST_PER_MILLION || 0);
-  const outputRate = Number(process.env.OPENAI_OUTPUT_COST_PER_MILLION || 0);
-  const embeddingRate = Number(process.env.OPENAI_EMBEDDING_COST_PER_MILLION || 0);
-  const configuredCost = (totals.inputTokens * inputRate + totals.outputTokens * outputRate + totals.embeddingTokens * embeddingRate) / 1_000_000;
-  return { ...totals, estimatedCost: totals.reportedCost || configuredCost };
+  const estimate = calculateLunaCost(totals);
+  return { ...totals, estimatedCost: estimate.totalCost, costBreakdown: estimate };
 }
 
 export function averageLatency(messages: AnalyticsMessage[]) {

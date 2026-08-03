@@ -4,6 +4,7 @@ import { buildGroundedPrompt } from "@/lib/chat/prompt";
 import { createLocalGroundedAnswer, isArabic } from "@/lib/chat/local-answer";
 import { estimateTokens } from "@/lib/chat/token-estimate";
 import { getOpenAIEnvironment } from "@/lib/env";
+import { calculateLunaCost, LUNA_PRICING } from "@/lib/openai/pricing";
 import { retrieveProjectKnowledge, type RetrievedChunk } from "@/lib/retrieval";
 import { createClient } from "@/lib/supabase/server";
 import { adminChatRequestSchema } from "@/lib/validation/chat";
@@ -89,6 +90,8 @@ export async function POST(
     let model = "safe-fallback";
     let inputTokens = estimateTokens(parsed.data.message);
     let outputTokens = estimateTokens(answer);
+    let cachedInputTokens = 0;
+    let cacheWriteTokens = 0;
     let unanswered = retrieval.chunks.length === 0;
     let promptTokens = 0;
 
@@ -113,6 +116,8 @@ export async function POST(
         model = generated.model;
         inputTokens = generated.inputTokens;
         outputTokens = generated.outputTokens;
+        cachedInputTokens = generated.cachedInputTokens;
+        cacheWriteTokens = generated.cacheWriteTokens;
         unanswered = !generated.text;
       }
     }
@@ -142,6 +147,9 @@ export async function POST(
     }
 
     const latencyMs = Date.now() - startedAt;
+    const estimatedCost = model === LUNA_PRICING.model
+      ? calculateLunaCost({ inputTokens, cachedInputTokens, cacheWriteTokens, outputTokens, embeddingTokens: retrieval.embeddingTokens }).totalCost
+      : null;
     const bestScore = retrieval.chunks[0]?.similarity ?? null;
     const { error: messagesError } = await supabase.from("messages").insert([
       {
@@ -180,6 +188,7 @@ export async function POST(
         input_tokens: inputTokens,
         output_tokens: outputTokens,
         embedding_tokens: retrieval.embeddingTokens,
+        estimated_cost: estimatedCost,
       }),
     ]);
 
@@ -198,6 +207,8 @@ export async function POST(
         model,
         inputTokens,
         outputTokens,
+        cachedInputTokens,
+        cacheWriteTokens,
         embeddingTokens: retrieval.embeddingTokens,
         latencyMs,
       },
