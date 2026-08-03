@@ -74,10 +74,11 @@ export async function POST(request: Request) {
       if (error || !created) throw error || new Error("Conversation could not be saved.");
       conversationId = created.id;
     }
+    const userMessageId = crypto.randomUUID();
     const assistantMessageId = crypto.randomUUID();
     const latencyMs = Date.now() - startedAt;
     const { error: messageError } = await supabase.from("messages").insert([
-      { project_id: widget.project.id, conversation_id: conversationId, role: "user", content: parsed.data.message, sources: [] },
+      { id: userMessageId, project_id: widget.project.id, conversation_id: conversationId, role: "user", content: parsed.data.message, sources: [], retrieval_score: null, model: null, input_tokens: null, output_tokens: null, latency_ms: null, is_unanswered: false },
       { id: assistantMessageId, project_id: widget.project.id, conversation_id: conversationId, role: "assistant", content: answer, sources: uniqueSources, retrieval_score: retrieval.chunks[0]?.similarity ?? null, model, input_tokens: inputTokens, output_tokens: outputTokens, latency_ms: latencyMs, is_unanswered: unanswered },
     ]);
     if (messageError) throw messageError;
