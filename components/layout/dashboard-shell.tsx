@@ -1,24 +1,23 @@
 import Link from "next/link";
-import { BarChart3, Bot, FolderKanban, LogOut, Plus, Settings2 } from "lucide-react";
+import { Bot, LogOut, Plus } from "lucide-react";
 import { logout } from "@/app/actions/auth";
 import { Brand } from "@/components/layout/brand";
+import { WorkspaceNavigation } from "@/components/layout/workspace-navigation";
 
 export function DashboardShell({
   email,
+  name,
   children,
 }: {
   email: string;
+  name?: string | null;
   children: React.ReactNode;
 }) {
   return (
     <div className="dashboard-shell">
       <aside className="sidebar">
         <Brand />
-        <nav aria-label="Main navigation">
-          <Link href="/dashboard" className="nav-link nav-link-active"><FolderKanban size={19} /> Projects</Link>
-          <span className="nav-link nav-link-disabled"><BarChart3 size={19} /> Analytics <small>Soon</small></span>
-          <span className="nav-link nav-link-disabled"><Settings2 size={19} /> Settings <small>Soon</small></span>
-        </nav>
+        <WorkspaceNavigation />
         <div className="sidebar-note">
           <Bot size={22} />
           <strong>Built for verified answers</strong>
@@ -26,7 +25,7 @@ export function DashboardShell({
         </div>
         <div className="account-card">
           <span className="account-avatar">{email.slice(0, 1).toUpperCase()}</span>
-          <span><strong>K-Labs admin</strong><small title={email}>{email}</small></span>
+          <span><strong>{name?.trim() || "K-Labs admin"}</strong><small title={email}>{email}</small></span>
           <form action={logout}>
             <button className="icon-button" aria-label="Sign out" title="Sign out"><LogOut size={17} /></button>
           </form>

@@ -4,6 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: { default: "K-Labs Website AI", template: "%s · K-Labs Website AI" },
   description: "Secure, reusable website chatbots managed by K-Labs.",
+  icons: { icon: "/klabs-mark.png" },
   robots: { index: false, follow: false },
 };
 
