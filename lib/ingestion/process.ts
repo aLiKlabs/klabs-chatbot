@@ -1,16 +1,19 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { LaravelClient } from "@/lib/laravel/client";
 import { cleanExtractedText } from "@/lib/ingestion/clean";
 import { createTextChunks } from "@/lib/ingestion/chunk";
 import { extractDocument } from "@/lib/ingestion/extract";
 import { createContentHash } from "@/lib/ingestion/hash";
+import { knowledgeRedactionTopics, redactKnowledgeText } from "@/lib/ingestion/redact";
 import { createEmbeddings } from "@/lib/openai/embeddings";
 import { getOpenAIEnvironment } from "@/lib/env";
+import { detectKnowledgeLanguage } from "@/lib/retrieval/language";
 import type { KnowledgeSource } from "@/types/database";
 
 type SourcePage = {
   id: string;
   url: string;
   title: string | null;
+  raw_text: string | null;
   clean_text: string | null;
 };
 
@@ -38,8 +41,9 @@ function parseStoredEmbedding(value: unknown): number[] | null {
 }
 
 async function saveExtractedPages(
-  supabase: SupabaseClient,
+  supabase: LaravelClient,
   source: KnowledgeSource,
+  redactionTopics: readonly string[],
 ): Promise<SourcePage[]> {
   if (!source.storage_path) throw new Error("The uploaded file is missing from storage.");
   const { data, error } = await supabase.storage
@@ -51,6 +55,7 @@ async function saveExtractedPages(
   const extracted = await extractDocument(bytes, source.name, sourceMimeType(source));
   const rows = extracted.sections.map((section) => {
     const pageSuffix = section.pageNumber ? `#page=${section.pageNumber}` : "";
+    const text = redactKnowledgeText(section.text, redactionTopics);
     return {
       project_id: source.project_id,
       knowledge_source_id: source.id,
@@ -58,9 +63,9 @@ async function saveExtractedPages(
       title: section.pageNumber
         ? `${extracted.title || source.name} — Page ${section.pageNumber}`
         : extracted.title || source.name,
-      raw_text: section.text,
-      clean_text: section.text,
-      content_hash: createContentHash(section.text),
+      raw_text: text,
+      clean_text: text,
+      content_hash: createContentHash(text),
       last_crawled_at: new Date().toISOString(),
     };
   });
@@ -73,13 +78,33 @@ async function saveExtractedPages(
   const { data: pages, error: insertError } = await supabase
     .from("source_pages")
     .insert(rows)
-    .select("id,url,title,clean_text");
+    .select("id,url,title,raw_text,clean_text");
   if (insertError || !pages) throw insertError || new Error("Extracted pages could not be saved.");
   return pages as SourcePage[];
 }
 
+async function redactStoredPages(
+  supabase: LaravelClient,
+  pages: SourcePage[],
+  redactionTopics: readonly string[],
+) {
+  return Promise.all(pages.map(async (page) => {
+    const rawText = redactKnowledgeText(page.raw_text || page.clean_text || "", redactionTopics);
+    const cleanText = redactKnowledgeText(page.clean_text || "", redactionTopics);
+    if (rawText !== page.raw_text || cleanText !== page.clean_text) {
+      const { error } = await supabase.from("source_pages").update({
+        raw_text: rawText,
+        clean_text: cleanText,
+        content_hash: createContentHash(cleanText),
+      }).eq("id", page.id);
+      if (error) throw error;
+    }
+    return { ...page, raw_text: rawText, clean_text: cleanText };
+  }));
+}
+
 export async function processKnowledgeSource(
-  supabase: SupabaseClient,
+  supabase: LaravelClient,
   projectId: string,
   sourceId: string,
 ) {
@@ -91,6 +116,18 @@ export async function processKnowledgeSource(
     .single();
   if (sourceError || !rawSource) throw new Error("Knowledge source not found.");
   const source = rawSource as KnowledgeSource;
+  const { data: instructions } = await supabase
+    .from("chatbot_instructions")
+    .select("restricted_topics")
+    .eq("project_id", projectId)
+    .maybeSingle();
+  const projectTopics = Array.isArray(instructions?.restricted_topics)
+    ? instructions.restricted_topics.filter((topic: unknown): topic is string => typeof topic === "string")
+    : [];
+  const redactionTopics = Array.from(new Set([
+    ...knowledgeRedactionTopics(source.metadata),
+    ...projectTopics,
+  ]));
 
   const { data: oldChunkRows } = await supabase
     .from("document_chunks")
@@ -125,16 +162,17 @@ export async function processKnowledgeSource(
 
     let pages: SourcePage[];
     if (source.storage_path) {
-      pages = await saveExtractedPages(supabase, source);
+      pages = await saveExtractedPages(supabase, source, redactionTopics);
     } else {
       const { data, error } = await supabase
         .from("source_pages")
-        .select("id,url,title,clean_text")
+        .select("id,url,title,raw_text,clean_text")
         .eq("knowledge_source_id", sourceId)
         .order("created_at");
       if (error || !data?.length) throw new Error("This source has no readable content.");
       pages = data as SourcePage[];
     }
+    pages = await redactStoredPages(supabase, pages, redactionTopics);
 
     await supabase.from("ingestion_jobs").update({ progress: 35 }).eq("id", job.id);
     const sourceContent = pages
@@ -197,6 +235,7 @@ export async function processKnowledgeSource(
           ? Number(chunk.pageUrl.match(/#page=(\d+)$/)?.[1])
           : null,
         original_url: /^https?:\/\//i.test(chunk.pageUrl) ? chunk.pageUrl : source.original_url,
+        language: detectKnowledgeLanguage(chunk.content),
       },
     }));
     const { error: replaceError } = await supabase.rpc("replace_source_chunks", {

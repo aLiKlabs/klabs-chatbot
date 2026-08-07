@@ -2,12 +2,11 @@ import { z } from "zod";
 
 const publicEnvironmentSchema = z.object({
   NEXT_PUBLIC_APP_URL: z.string().url().default("http://localhost:3000"),
-  NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
 });
 
 const serverEnvironmentSchema = publicEnvironmentSchema.extend({
-  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
+  LARAVEL_API_URL: z.string().url().default("http://127.0.0.1:8000"),
+  LARAVEL_INTERNAL_KEY: z.string().min(32),
   ADMIN_ALLOWED_EMAILS: z.string().default(""),
 });
 
@@ -29,15 +28,14 @@ export type OpenAIEnvironment = z.infer<typeof openAIEnvironmentSchema>;
 export function getPublicEnvironment(): PublicEnvironment {
   return publicEnvironmentSchema.parse({
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
-    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   });
 }
 
 export function getServerEnvironment(): ServerEnvironment {
   return serverEnvironmentSchema.parse({
     ...getPublicEnvironment(),
-    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    LARAVEL_API_URL: process.env.LARAVEL_API_URL,
+    LARAVEL_INTERNAL_KEY: process.env.LARAVEL_INTERNAL_KEY,
     ADMIN_ALLOWED_EMAILS: process.env.ADMIN_ALLOWED_EMAILS,
   });
 }

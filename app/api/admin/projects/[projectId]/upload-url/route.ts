@@ -1,12 +1,19 @@
 import { NextResponse } from "next/server";
-import { requireAdministrator } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
+import { getAdministrator } from "@/lib/auth";
+import { createClient } from "@/lib/laravel/server";
 import { safeStorageFilename, uploadRequestSchema } from "@/lib/validation/knowledge";
 
 export async function POST(request: Request, context: { params: Promise<{ projectId: string }> }) {
-  await requireAdministrator();
+  if (!(await getAdministrator())) {
+    return NextResponse.json({ error: "Your administrator session expired. Refresh the page and sign in again." }, { status: 401 });
+  }
   const { projectId } = await context.params;
-  const parsed = uploadRequestSchema.safeParse(await request.json().catch(() => null));
+  const formData = await request.formData();
+  const file = formData.get("file");
+  if (!(file instanceof File)) {
+    return NextResponse.json({ error: "Choose a document to upload." }, { status: 400 });
+  }
+  const parsed = uploadRequestSchema.safeParse({ filename: file.name, mimeType: file.type, size: file.size });
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message || "Invalid upload." }, { status: 400 });
   }
@@ -29,10 +36,14 @@ export async function POST(request: Request, context: { params: Promise<{ projec
   });
   if (sourceError) return NextResponse.json({ error: "The upload could not be prepared." }, { status: 500 });
 
-  const { data, error } = await supabase.storage.from("chatbot-documents").createSignedUploadUrl(path);
-  if (error || !data) {
+  // Detach the uploaded bytes from Next's incoming multipart request before
+  // forwarding them to Laravel. Reusing that request-backed File can leave the
+  // PHP development server waiting on a stream until its execution timeout.
+  const storedFile = new Blob([await file.arrayBuffer()], { type: parsed.data.mimeType });
+  const { error } = await supabase.storage.from("chatbot-documents").upload(path, storedFile, file.name);
+  if (error) {
     await supabase.from("knowledge_sources").delete().eq("id", sourceId);
-    return NextResponse.json({ error: "A secure upload URL could not be created." }, { status: 500 });
+    return NextResponse.json({ error: error.message || "The document could not be stored." }, { status: 500 });
   }
-  return NextResponse.json({ sourceId, path, token: data.token });
+  return NextResponse.json({ sourceId, path });
 }

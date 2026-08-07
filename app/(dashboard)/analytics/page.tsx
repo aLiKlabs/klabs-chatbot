@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Activity, BarChart3, Bot, CircleHelp, Coins, FolderKanban, MessageCircleQuestion, MessageSquareText, UserRound } from "lucide-react";
 import { buildDailySeries, calculateUsage, type AnalyticsMessage, type UsageRow } from "@/lib/analytics";
 import { UsageCalculator } from "@/components/admin/usage-calculator";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/laravel/server";
 import type { Project } from "@/types/database";
 
 type ConversationRow = { id: string; project_id: string; started_at: string };

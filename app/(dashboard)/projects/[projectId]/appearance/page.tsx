@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { ProjectHeader } from "@/components/admin/project-header";
 import { AppearanceForm } from "@/components/forms/appearance-form";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/laravel/server";
 import type { Project } from "@/types/database";
 
 export default async function AppearancePage({ params }: { params: Promise<{ projectId: string }> }) {

@@ -14,6 +14,7 @@ import {
   Sparkles,
   User,
 } from "lucide-react";
+import { MessageContent } from "@/components/chatbot/message-content";
 
 type Source = { title: string; url: string | null; pageNumber: number | null };
 type DebugChunk = Source & { content: string; similarity: number };
@@ -37,10 +38,11 @@ type Message = {
 export interface ChatbotTesterProps {
   projectId: string;
   botName: string;
-  welcomeMessage: string;
-  placeholderText: string;
+  defaultLanguage: "en" | "ar";
+  welcomeMessages: Record<"en" | "ar", string>;
+  placeholderTexts: Record<"en" | "ar", string>;
   primaryColor: string;
-  suggestions: string[];
+  suggestions: Record<"en" | "ar", string[]>;
   mockMode: boolean;
 }
 
@@ -49,9 +51,11 @@ function id() {
 }
 
 export function ChatbotTester(props: ChatbotTesterProps) {
+  const [language, setLanguage] = useState<"en" | "ar">(props.defaultLanguage);
+  const rtl = language === "ar";
   const initialMessage = useMemo<Message>(
-    () => ({ id: "welcome", role: "assistant", content: props.welcomeMessage }),
-    [props.welcomeMessage],
+    () => ({ id: "welcome", role: "assistant", content: props.welcomeMessages[language] }),
+    [language, props.welcomeMessages],
   );
   const [messages, setMessages] = useState<Message[]>([initialMessage]);
   const [draft, setDraft] = useState("");
@@ -80,7 +84,7 @@ export function ChatbotTester(props: ChatbotTesterProps) {
       const response = await fetch(`/api/admin/projects/${props.projectId}/chat`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ message: content, sessionId: sessionId.current, history }),
+        body: JSON.stringify({ message: content, sessionId: sessionId.current, language, history }),
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error?.message || "The chatbot could not answer.");
@@ -121,23 +125,36 @@ export function ChatbotTester(props: ChatbotTesterProps) {
     setDraft("");
   }
 
+  function switchLanguage() {
+    const nextLanguage = rtl ? "en" : "ar";
+    setLanguage(nextLanguage);
+    sessionId.current = null;
+    setMessages([{ id: "welcome", role: "assistant", content: props.welcomeMessages[nextLanguage] }]);
+    setDebug(null);
+    setError(null);
+    setDraft("");
+  }
+
   return (
     <div className="testing-layout" style={style}>
-      <section className="chat-preview" aria-label={`${props.botName} testing chatbot`}>
+      <section className="chat-preview" aria-label={`${props.botName} testing chatbot`} dir={rtl ? "rtl" : "ltr"}>
         <header className="chat-preview-header">
           <span className="chat-avatar"><Bot size={22} /></span>
-          <div><strong>{props.botName}</strong><small><i /> Connected to project knowledge</small></div>
-          <button type="button" onClick={restart} title="Restart conversation" aria-label="Restart conversation"><RefreshCw size={17} /></button>
+          <div><strong>{props.botName}</strong><small><i /> {rtl ? "متصل بقاعدة معرفة المشروع" : "Connected to project knowledge"}</small></div>
+          <div className="chat-preview-actions">
+            <button className="chat-language-toggle" type="button" onClick={switchLanguage} title={rtl ? "Switch to English" : "التبديل إلى العربية"} aria-label={rtl ? "Switch to English" : "التبديل إلى العربية"}>{rtl ? "EN" : "ع"}</button>
+            <button type="button" onClick={restart} title={rtl ? "بدء محادثة جديدة" : "Restart conversation"} aria-label={rtl ? "بدء محادثة جديدة" : "Restart conversation"}><RefreshCw size={17} /></button>
+          </div>
         </header>
 
         <div className="chat-transcript" aria-live="polite">
-          <div className="chat-date"><span>Private administrator preview</span></div>
+          <div className="chat-date"><span>{rtl ? "معاينة خاصة للمسؤول" : "Private administrator preview"}</span></div>
           {messages.map((message) => (
             <article className={`chat-message chat-message-${message.role}`} key={message.id}>
               <span className="message-avatar">{message.role === "assistant" ? <Bot size={15} /> : <User size={15} />}</span>
               <div>
-                <p>{message.content}</p>
-                {message.unanswered && <small className="fallback-label"><ShieldCheck size={12} /> Safe fallback used</small>}
+                <MessageContent content={message.content} />
+                {message.unanswered && <small className="fallback-label"><ShieldCheck size={12} /> {rtl ? "تم استخدام الرد الآمن" : "Safe fallback used"}</small>}
               </div>
             </article>
           ))}
@@ -149,27 +166,34 @@ export function ChatbotTester(props: ChatbotTesterProps) {
           )}
         </div>
 
-        {messages.length === 1 && props.suggestions.length > 0 && (
+        {messages.length === 1 && props.suggestions[language].length > 0 && (
           <div className="chat-suggestions">
-            {props.suggestions.slice(0, 3).map((suggestion) => (
-              <button type="button" onClick={() => void sendMessage(suggestion)} key={suggestion}>{suggestion}</button>
+            {props.suggestions[language].slice(0, 3).map((suggestion) => (
+              <button
+                type="button"
+                onClick={() => void sendMessage(suggestion)}
+                key={suggestion}
+                style={{ color: props.primaryColor, borderColor: props.primaryColor, backgroundColor: "transparent" }}
+              >
+                {suggestion}
+              </button>
             ))}
           </div>
         )}
         {error && <p className="chat-error" role="alert">{error}</p>}
         <form className="chat-composer" onSubmit={submit}>
           <textarea
-            aria-label="Message the chatbot"
+            aria-label={rtl ? "اكتب رسالة للمساعد" : "Message the chatbot"}
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
             onKeyDown={inputKeyDown}
-            placeholder={props.placeholderText}
+            placeholder={props.placeholderTexts[language]}
             maxLength={2_000}
             rows={1}
             disabled={sending}
           />
-          <button type="submit" disabled={sending || draft.trim().length < 2} aria-label="Send message"><Send size={17} /></button>
-          <small>Enter to send · Shift + Enter for a new line</small>
+          <button type="submit" disabled={sending || draft.trim().length < 2} aria-label={rtl ? "إرسال" : "Send message"}><Send size={17} /></button>
+          <small>{rtl ? "Enter للإرسال · Shift + Enter لسطر جديد" : "Enter to send · Shift + Enter for a new line"}</small>
         </form>
       </section>
 

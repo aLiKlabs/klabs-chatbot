@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Globe2, Search, ShieldCheck } from "lucide-react";
+import { readApiPayload } from "@/lib/http/api-response";
 
 type PreviewPage = {
   url: string;
@@ -18,6 +19,7 @@ export function WebsiteCrawler({ projectId, websiteUrl }: { projectId: string; w
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState<"preview" | "import">();
   const [message, setMessage] = useState<{ type: "error" | "success"; text: string }>();
+  const arabicUrl = `${new URL(websiteUrl).origin}/ar`;
 
   async function preview() {
     setBusy("preview");
@@ -28,8 +30,7 @@ export function WebsiteCrawler({ projectId, websiteUrl }: { projectId: string; w
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ url, maxPages: 20 }),
       });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "The website could not be previewed.");
+      const result = await readApiPayload<{ pages: PreviewPage[]; error?: string }>(response);
       setPages(result.pages);
       setSelected(new Set(result.pages.map((page: PreviewPage) => page.url)));
       setMessage({ type: "success", text: `Found ${result.pages.length} readable page${result.pages.length === 1 ? "" : "s"}. Review the list before importing.` });
@@ -59,8 +60,7 @@ export function WebsiteCrawler({ projectId, websiteUrl }: { projectId: string; w
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ url, selectedUrls: [...selected] }),
       });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "The website could not be imported.");
+      const result = await readApiPayload<{ pageCount: number; chunkCount: number; error?: string }>(response);
       setMessage({ type: "success", text: `${result.pageCount} page${result.pageCount === 1 ? "" : "s"} imported as ${result.chunkCount} knowledge chunks.` });
       setPages([]);
       setSelected(new Set());
@@ -77,10 +77,10 @@ export function WebsiteCrawler({ projectId, websiteUrl }: { projectId: string; w
       <span className="entry-icon"><Globe2 size={20} /></span>
       <div><h2>Crawl the website</h2><p>Find readable pages on the project domain and choose which ones become chatbot knowledge.</p></div>
       <div className="crawler-input-row">
-        <label className="field"><span>Website URL</span><input value={url} onChange={(event) => setUrl(event.target.value)} placeholder="https://example.com" /></label>
+        <label className="field"><span>Website URL <button className="crawler-language-link" type="button" onClick={() => setUrl(arabicUrl)}>Use Arabic route</button></span><input value={url} onChange={(event) => setUrl(event.target.value)} placeholder="https://example.com" /></label>
         <button className="button button-secondary" type="button" disabled={Boolean(busy) || !url.trim()} onClick={preview}><Search size={15} />{busy === "preview" ? "Checking…" : "Preview pages"}</button>
       </div>
-      <div className="crawler-safety"><ShieldCheck size={14} /><span>Same-domain pages only · robots.txt respected · private networks and unsafe redirects blocked</span></div>
+      <div className="crawler-safety"><ShieldCheck size={14} /><span>Same-domain pages only · robots.txt respected · private networks and unsafe redirects blocked. Preview and import the Arabic route separately for Arabic answers.</span></div>
       {message && <p className={`form-message ${message.type}`}>{message.text}</p>}
       {pages.length > 0 && (
         <div className="crawler-preview">

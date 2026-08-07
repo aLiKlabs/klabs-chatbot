@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireAdministrator } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/laravel/server";
 
 export type WorkspaceSettingsState = { error?: string; success?: string; fieldErrors?: Record<string, string[]> };
 

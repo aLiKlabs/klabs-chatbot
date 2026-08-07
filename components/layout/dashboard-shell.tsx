@@ -3,6 +3,7 @@ import { Bot, LogOut, Plus } from "lucide-react";
 import { logout } from "@/app/actions/auth";
 import { Brand } from "@/components/layout/brand";
 import { WorkspaceNavigation } from "@/components/layout/workspace-navigation";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 
 export function DashboardShell({
   email,
@@ -16,7 +17,7 @@ export function DashboardShell({
   return (
     <div className="dashboard-shell">
       <aside className="sidebar">
-        <Brand />
+        <div className="sidebar-top"><Brand /><ThemeToggle /></div>
         <WorkspaceNavigation />
         <div className="sidebar-note">
           <Bot size={22} />

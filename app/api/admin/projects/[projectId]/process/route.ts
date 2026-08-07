@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdministrator } from "@/lib/auth";
 import { processKnowledgeSource } from "@/lib/ingestion/process";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/laravel/server";
 import { sourceIdSchema } from "@/lib/validation/knowledge";
 
 export async function POST(request: Request, context: { params: Promise<{ projectId: string }> }) {

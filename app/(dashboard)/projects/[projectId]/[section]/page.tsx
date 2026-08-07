@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { Construction, Sparkles } from "lucide-react";
 import { ProjectHeader } from "@/components/admin/project-header";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/laravel/server";
 import type { Project } from "@/types/database";
 
 const sections: Record<string, { title: string; description: string; phase: string }> = {

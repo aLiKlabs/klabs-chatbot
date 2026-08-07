@@ -1,6 +1,8 @@
 import { z } from "zod";
 
-const publicKey = z.string().regex(/^[a-f0-9]{36}$/i, "Invalid chatbot key.");
+// Laravel Str::random(36) generates the full alphanumeric range, not a
+// hexadecimal-only identifier.
+const publicKey = z.string().regex(/^[a-z0-9]{36}$/i, "Invalid chatbot key.");
 const historyMessage = z.object({ role: z.enum(["user", "assistant"]), content: z.string().trim().min(1).max(2_000) });
 
 export const publicChatSchema = z.object({

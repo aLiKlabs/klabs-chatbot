@@ -1,201 +1,133 @@
 # K-Labs Reusable Website AI Chatbot
 
-An internal platform for K-Labs administrators to create isolated, knowledge-grounded AI assistants for client websites. Each project has separate configuration, domains, content, conversations, feedback, leads, and analytics. There is no public signup, billing, subscription, or customer dashboard.
-
-Phases 1–6 are implemented: secure administration, private knowledge ingestion, project-grounded chatbot testing, SSRF-safe crawling, an isolated public widget, and project-scoped conversation and analytics reporting.
+K-Labs’ multi-project, knowledge-grounded website chatbot platform. The existing dark Next.js dashboard and embeddable widget remain the frontend. Laravel is now the secure API and application backend, with MySQL as the authoritative database and Laravel private storage for uploaded documents.
 
 ## Architecture
 
-- **Dashboard:** Next.js App Router, React, strict TypeScript, and Tailwind CSS.
-- **Authentication:** Supabase Auth sessions refreshed by the Next.js request proxy. Access requires both a valid Supabase user and an email in `ADMIN_ALLOWED_EMAILS`.
-- **Authorization:** PostgreSQL RLS permits data access only to authenticated users with the `administrator` role in Supabase app metadata or `profiles`.
-- **Database:** Supabase PostgreSQL with project-scoped tables, foreign keys, indexes, timestamps, and cascade rules.
-- **Storage:** private `chatbot-documents` and `chatbot-branding` Supabase Storage buckets.
-- **Knowledge ingestion:** server-side PDF/DOCX/TXT/Markdown extraction, deterministic hashing, token-aware semantic chunks, batched OpenAI embeddings, and transactional pgvector replacement.
-- **Retrieval foundation:** pgvector column and a project-filtered `match_document_chunks` function. Public browser access is revoked.
-- **Deployment target:** Vercel for Next.js and hosted Supabase for database, auth, and storage.
+- **Dashboard and widget:** Next.js App Router, React, TypeScript, Tailwind CSS.
+- **Backend API:** Laravel 13 under `backend/`.
+- **Database:** MySQL 8.4 with UUID project-scoped tables and foreign keys.
+- **Authentication:** Laravel Sanctum API tokens stored in a secure HTTP-only Next.js cookie.
+- **Authorization:** Laravel middleware, administrator roles, an independent email allowlist, and an internal service key for widget/server requests.
+- **Storage:** Laravel’s private local disk (`backend/storage/app/private`) by default. It can be switched to S3 through Laravel filesystem configuration.
+- **Knowledge processing:** The Next.js server extracts/chunks content and calls the Laravel API for private files, transactional chunk replacement, embeddings, retrieval, and usage records.
+- **AI:** OpenAI Responses and Embeddings APIs, with deterministic mock embeddings for free local testing.
 
-Later phases add Responses API streaming, retrieval, the SSRF-safe crawler, embeddable widget, conversations, and analytics. See [PLAN.md](./PLAN.md).
+Supabase is no longer required at runtime.
 
-## Prerequisites
+## Requirements
 
-- Node.js 20.9 or newer
-- npm 10 or newer
-- A Supabase project
-- Supabase CLI (recommended for local migrations)
-- An OpenAI API key with available API credits for Phases 2–3
+- PHP 8.3+
+- Composer 2
+- Laravel CLI
+- MySQL 8+
+- Node.js 20.9+
+- npm 10+
 
-## Local installation
+## 1. Configure MySQL and Laravel
 
-```bash
-git clone <repository>
-cd klabs-website-chatbot
-npm install
-cp .env.example .env.local
+Create a dedicated database and user in MySQL. Do not use the MySQL root account in the application:
+
+```sql
+CREATE DATABASE klabs_chatbot CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'klabs_chatbot'@'127.0.0.1' IDENTIFIED BY 'replace-with-a-strong-password';
+GRANT ALL PRIVILEGES ON klabs_chatbot.* TO 'klabs_chatbot'@'127.0.0.1';
+FLUSH PRIVILEGES;
 ```
 
-Fill in the Supabase values and administrator allowlist, then run:
+Copy and configure Laravel:
+
+```bash
+cd backend
+composer install
+cp .env.example .env
+php artisan key:generate
+```
+
+Set these values in `backend/.env`:
+
+```dotenv
+DB_DATABASE=klabs_chatbot
+DB_USERNAME=klabs_chatbot
+DB_PASSWORD=replace-with-a-strong-password
+ADMIN_ALLOWED_EMAILS=you@klabs.co
+ADMIN_EMAIL=you@klabs.co
+ADMIN_PASSWORD=replace-with-your-admin-password
+LARAVEL_INTERNAL_KEY=the-same-random-64-character-value-used-by-nextjs
+```
+
+Then create the schema and administrator:
+
+```bash
+php artisan migrate --seed
+php artisan serve --host=127.0.0.1 --port=8000
+```
+
+## 2. Configure and run the dashboard
+
+From the project root:
+
+```bash
+cp .env.example .env.local
+npm install
+```
+
+Generate a secure shared internal key (for example, `openssl rand -hex 32`) and place the same value in both `backend/.env` and `.env.local`. Do not commit either file.
+
+Set:
+
+```dotenv
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+LARAVEL_API_URL=http://127.0.0.1:8000
+LARAVEL_INTERNAL_KEY=the-same-value-used-in-backend-env
+ADMIN_ALLOWED_EMAILS=you@klabs.co
+```
+
+Keep the existing OpenAI and retrieval settings, then run:
 
 ```bash
 npm run dev
 ```
 
-Open `http://localhost:3000`. The root route sends users to the protected dashboard or login page.
+Open [http://localhost:3000](http://localhost:3000). Laravel must also be running on port 8000.
 
-## Supabase setup
+## Free local testing
 
-1. Create a Supabase project and record its project URL and anonymous key.
-2. Disable public user registration in **Authentication → Providers → Email**. Administrators must be created by a trusted operator.
-3. Apply migrations:
+Set `MOCK_EMBEDDINGS=true` in `.env.local`. Document extraction, private storage, chunking, MySQL persistence, project-scoped retrieval, the dashboard tester, and the public widget can then be exercised without OpenAI API charges.
 
-   ```bash
-   supabase link --project-ref <project-ref>
-   supabase db push
-   ```
+## Database schema
 
-4. Create an administrator in the Supabase dashboard under **Authentication → Users**.
-5. Set that user’s app metadata to:
+Laravel migrations create:
 
-   ```json
-   { "role": "administrator" }
-   ```
+- users, profiles, and Sanctum access tokens;
+- projects, appearance, instructions, and approved domains;
+- knowledge sources, pages, chunks, and ingestion jobs;
+- conversations, messages, feedback, leads, and usage events.
 
-   If the user existed before the migration, also set `public.profiles.role` to `administrator`. New users receive a profile automatically.
-6. Add the same email to `ADMIN_ALLOWED_EMAILS`. This independent server-side allowlist prevents an otherwise valid Supabase account from entering the dashboard.
-7. Confirm that the migration created the private `chatbot-documents` and `chatbot-branding` buckets.
+Embedding vectors are stored as JSON in MySQL. Laravel performs project-filtered cosine similarity for semantic retrieval. This keeps MySQL compatibility without requiring PostgreSQL/pgvector.
 
-The migration enables `pgcrypto` and `vector`. `document_chunks.embedding` uses 1,536 dimensions, matching the example configuration. If a different embedding dimension is selected, update both the migration typmod/function signature and `OPENAI_EMBEDDING_DIMENSIONS` before applying the migration.
+## Security
 
-For local Supabase:
+- The browser never receives MySQL credentials, the Laravel internal key, or the OpenAI key.
+- Admin access requires a valid Sanctum token, administrator role, and allowlisted email.
+- Public widget requests use controlled Next.js endpoints; the Next.js server uses the Laravel internal key.
+- The data gateway allowlists tables, validates columns, restricts operators, and is unavailable anonymously.
+- Uploads are private, path-normalized, limited to 20 MB, and downloaded only through authenticated/internal Laravel routes.
+- Every client-owned record is scoped by `project_id`.
 
-```bash
-supabase start
-supabase db reset
-```
-
-`supabase db reset` applies migrations and then `supabase/seed.sql`. The demo seed waits for an administrator and safely skips itself when one does not exist.
-
-## Environment variables
-
-Copy `.env.example` to `.env.local`. Never commit `.env.local` or real credentials.
-
-| Variable | Visibility | Purpose |
-| --- | --- | --- |
-| `NEXT_PUBLIC_APP_URL` | Browser-safe | Canonical dashboard/widget base URL; locally `http://localhost:3000`. |
-| `NEXT_PUBLIC_SUPABASE_URL` | Browser-safe | Supabase project URL. |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Browser-safe | Supabase anonymous key. RLS still applies. |
-| `SUPABASE_SERVICE_ROLE_KEY` | Server only | Trusted public endpoints and ingestion jobs in later phases. Never import into client code. |
-| `SUPABASE_DATABASE_URL` | Server/operations only | Direct PostgreSQL connection for operational tooling. |
-| `OPENAI_API_KEY` | Server only | Embeddings and Responses API access. |
-| `OPENAI_CHAT_MODEL` | Server only | Chat model name; code must not hardcode it. |
-| `OPENAI_EMBEDDING_MODEL` | Server only | Embedding model name. |
-| `OPENAI_EMBEDDING_DIMENSIONS` | Server only | Vector dimension; must match the migration. |
-| `ADMIN_ALLOWED_EMAILS` | Server only | Comma-separated, case-insensitive administrator allowlist. |
-| `CRON_SECRET` | Server only | Authenticates scheduled internal work. |
-| `INGESTION_SECRET` | Server only | Authenticates trusted ingestion workers. |
-| `RATE_LIMIT_PROVIDER` | Server only | `memory` locally; Redis-compatible provider in production. |
-| `UPSTASH_REDIS_REST_URL` | Server only | Production Upstash REST endpoint. |
-| `UPSTASH_REDIS_REST_TOKEN` | Server only | Production Upstash REST credential. |
-| `DEFAULT_MAX_RETRIEVAL_RESULTS` | Server only | Maximum initial vector matches. |
-| `DEFAULT_SIMILARITY_THRESHOLD` | Server only | Minimum accepted cosine similarity. |
-| `DEFAULT_MAX_CONTEXT_TOKENS` | Server only | Maximum retrieved context sent to the model. |
-| `DEFAULT_MAX_OUTPUT_TOKENS` | Server only | Default assistant output ceiling. |
-
-The app validates environment values when the relevant Supabase client is created. A missing or malformed public Supabase value produces a development-safe configuration error; secrets are never included in browser bundles.
-
-## Administrator workflow
-
-1. Sign in at `/login` with an approved Supabase email/password account.
-2. Select **Create project**.
-3. Enter the client website, supported languages, initial bot name, welcome message, colour, and optional contact details.
-4. Open the generated project workspace.
-5. Open **Knowledge** to upload a supported document, add approved text, or add an FAQ.
-6. Monitor source status and use the reprocess, disable, enable, or delete controls as needed.
-7. Edit details, activate/pause the project, or archive it.
-
-New projects start in `draft`. Later public endpoints will accept only `active` projects and approved domains.
-
-## Database isolation and security
-
-- Every client-owned table contains `project_id`.
-- RLS is enabled on every application table; anonymous users receive no direct table policies.
-- The public widget key is random and unique but is only an identifier, never a database credential.
-- `match_document_chunks` filters both chunks and sources by the supplied project and requires an administrator for direct authenticated calls. Later server-only public chat handlers use trusted service access after validating active status, domain, rate limits, and public key.
-- Uploaded documents and branding assets are private. Administrators access them through authenticated policies; public URLs are not created.
-- The service-role key, database URL, OpenAI key, and internal identifiers must never be sent to the widget.
-- Client content is treated as untrusted reference text. Later answer prompts will place protected instructions outside retrieved content.
-
-## Development and verification
+## Verification
 
 ```bash
 npm run lint
 npm run typecheck
 npm run test
-npm run test:e2e
 npm run build
+
+cd backend
+./vendor/bin/pint --test
+php artisan test
 ```
 
-`test:e2e` is wired for Playwright. Unit tests cover project validation, protocol restrictions, administrator allowlisting, RLS coverage, private buckets, project-scoped vector search, cleaning, deterministic hashing, token-aware chunking, upload validation, and the transactional ingestion migration.
+## Deployment
 
-## Knowledge ingestion (Phase 2)
-
-The protected Knowledge route supports manual text, FAQs, and PDF/DOCX/TXT/Markdown uploads. Browser uploads go directly to a signed path in the private `chatbot-documents` bucket, while all extraction and embedding remains server-side. Content is cleaned, deterministically hashed, split into token-bounded semantic chunks, embedded in batches with retry/backoff, and transactionally stored in pgvector. Unchanged sources and chunks reuse existing embeddings. The source library shows status, chunk count, processing errors, and reprocess/enable/disable/delete controls.
-
-OpenAI API usage is billed separately from ChatGPT. A key can be valid while embedding calls still return `insufficient_quota`; add API credits in the OpenAI platform, restart the app if credentials changed, and select **Reprocess source**.
-
-For free local workflow testing, set `MOCK_EMBEDDINGS=true` and run `npm run dev`. The dashboard displays a green test-mode banner and creates deterministic 1,536-dimension vectors locally. This validates forms, extraction, chunking, storage, statuses, and source controls, but it does not test semantic retrieval quality. Vercel production deployments reject mock mode.
-
-The protected **Testing** page provides a functional chatbot preview. With `MOCK_EMBEDDINGS=true`, it performs project-scoped lexical retrieval and extracts answers only from matching ready knowledge, so the chat workflow can be tested without OpenAI charges. It uses the configured safe fallback when no knowledge matches and saves conversations by project. Its administrator-only debug panel shows retrieved chunks, similarity scores, source labels, prompt size, model, token usage, and latency. Disable mock mode and reprocess all sources before testing real OpenAI vector retrieval and Responses API answers.
-
-## Website ingestion (Phase 4)
-
-The Knowledge page can preview up to 20 readable same-domain pages and selectively import them. The server resolves every requested host itself, blocks private/link-local/metadata/reserved addresses, rejects custom ports and credentials, revalidates every redirect, limits time and response size, respects `robots.txt`, removes common navigation/script/footer noise, and deduplicates page content before it reaches the normal project-scoped chunking and embedding pipeline.
-
-## Widget installation (Phase 5)
-
-The Installation page generates:
-
-```html
-<script
-  src="https://chat.klabs.co/widget.js"
-  data-chatbot-key="PUBLIC_PROJECT_KEY"
-  async>
-</script>
-```
-
-The asynchronous loader creates a style-isolated iframe and uses the project’s public key only as an identifier. The iframe fetches an active project’s safe configuration, streams answers from controlled server endpoints, supports English and Arabic RTL, collects answer feedback, and exposes configured WhatsApp, email, telephone, and contact-page actions. It never queries Supabase directly or receives server credentials.
-
-The project website is implicitly approved. Add staging or alternate domains on the Installation page. Draft, paused, archived, unknown, and off-domain widgets are rejected.
-
-## Conversations and analytics (Phase 6)
-
-The Conversations page provides project-scoped filtering by date, language, unanswered status, feedback, and collected leads, with complete administrator-only transcripts and response metadata. The Analytics page reports conversation and session counts, questions and answers, feedback, leads, answer rate, daily activity, common questions, frequently retrieved knowledge, latency, token usage, and estimated API cost for a selected date range.
-
-Set `OPENAI_INPUT_COST_PER_MILLION`, `OPENAI_OUTPUT_COST_PER_MILLION`, and `OPENAI_EMBEDDING_COST_PER_MILLION` to current USD rates when cost estimates are needed. Stored `usage_events.estimated_cost` values take precedence. Free local mode remains $0.
-
-## Vercel deployment
-
-1. Push the repository to GitHub and import it into Vercel.
-2. Set all `.env.example` variables for Preview and Production as appropriate.
-3. Use the default Next.js build command, `npm run build`.
-4. Apply Supabase migrations before activating any project.
-5. Add the production host (for example `chat.klabs.co`) in Vercel Domains and configure the DNS record Vercel provides.
-6. Add the production URL to Supabase Authentication URL configuration.
-7. Keep `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_DATABASE_URL`, `OPENAI_API_KEY`, and secrets server-only.
-
-## Known limitations
-
-- Website crawling and the public widget belong to later phases.
-- Search UI is visually prepared but disabled until server-side filtering is added.
-- Automated live OpenAI/Supabase flows require configured test credentials and API credits; local unit tests never call paid APIs.
-- Authentication currently uses email/password; magic-link authentication can be enabled without public registration in a later hardening pass.
-
-## Troubleshooting
-
-- **Redirected to login after signing in:** confirm the exact email is present in `ADMIN_ALLOWED_EMAILS` and the user’s app metadata/profile role is `administrator`.
-- **Projects cannot be loaded:** apply the migration and verify RLS role metadata.
-- **Invalid Supabase URL during development:** set all three `NEXT_PUBLIC_*` variables in `.env.local`, then restart the development server.
-- **Vector dimension error:** make the migration’s `vector(1536)` and `OPENAI_EMBEDDING_DIMENSIONS` match before inserting embeddings.
-- **Storage upload denied:** verify the bucket name, authenticated session, administrator role, and storage policies from the migration.
-- **OpenAI credits unavailable:** API billing is separate from ChatGPT subscriptions. Add credits in the OpenAI platform, then reprocess the failed source.
-- **Build differs from local:** use a supported Node version and run `npm ci` from the committed lockfile.
+Deploy the Next.js frontend and Laravel API separately. Laravel can run on a VPS, Laravel Forge, Laravel Cloud, or another PHP host with MySQL. Set `LARAVEL_API_URL` to the private/public HTTPS API URL, use matching internal keys, configure CORS to the dashboard origin, run `php artisan migrate --force`, and use S3-compatible private storage when multiple Laravel instances are deployed.

@@ -1,6 +1,6 @@
 import { requireAdministrator } from "@/lib/auth";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/laravel/server";
 
 export const dynamic = "force-dynamic";
 

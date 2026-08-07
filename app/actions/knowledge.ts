@@ -5,7 +5,7 @@ import { requireAdministrator } from "@/lib/auth";
 import { cleanExtractedText } from "@/lib/ingestion/clean";
 import { createContentHash } from "@/lib/ingestion/hash";
 import { processKnowledgeSource } from "@/lib/ingestion/process";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/laravel/server";
 import {
   faqSourceSchema,
   manualSourceSchema,

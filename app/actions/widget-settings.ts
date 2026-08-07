@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAdministrator } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/laravel/server";
 import { appearanceSchema, domainSchema, instructionsSchema } from "@/lib/validation/settings";
 
 export type SettingsActionState = { error?: string; success?: string; fieldErrors?: Record<string, string[]> };

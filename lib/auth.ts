@@ -1,7 +1,7 @@
 import { cache } from "react";
 import { redirect } from "next/navigation";
 import { isAllowedAdministrator } from "@/lib/env";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/laravel/server";
 
 export const getAdministrator = cache(async () => {
   const supabase = await createClient();

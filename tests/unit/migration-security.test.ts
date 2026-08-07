@@ -4,12 +4,15 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const migration = readFileSync(
-  join(process.cwd(), "supabase/migrations/202608020001_initial_schema.sql"),
+  join(process.cwd(), "backend/database/migrations/2026_08_03_100000_create_chatbot_tables.php"),
   "utf8",
 );
+const routes = readFileSync(join(process.cwd(), "backend/routes/api.php"), "utf8");
+const gateway = readFileSync(join(process.cwd(), "backend/app/Http/Controllers/Api/DataController.php"), "utf8");
+const storage = readFileSync(join(process.cwd(), "backend/app/Http/Controllers/Api/StorageController.php"), "utf8");
 
-describe("database security migration", () => {
-  it("enables RLS on every project-owned table", () => {
+describe("Laravel and MySQL security", () => {
+  it("creates every project-owned table with Laravel migrations", () => {
     const tables = [
       "projects",
       "chatbot_settings",
@@ -27,24 +30,23 @@ describe("database security migration", () => {
     ];
 
     for (const table of tables) {
-      expect(migration).toContain(`alter table public.${table} enable row level security`);
+      expect(migration).toContain(`Schema::create('${table}'`);
     }
   });
 
-  it("enforces project filtering inside vector search", () => {
-    expect(migration).toContain("dc.project_id = target_project_id");
-    expect(migration).toContain("ks.project_id = target_project_id");
-    expect(migration).toContain("public.is_klabs_admin()");
+  it("protects data routes with Sanctum or the internal key", () => {
+    expect(routes).toContain("middleware('auth:sanctum')");
+    expect(routes).toContain("middleware('internal')");
   });
 
-  it("keeps both storage buckets private", () => {
-    expect(migration).toContain("'chatbot-documents', 'chatbot-documents', false");
-    expect(migration).toContain("'chatbot-branding', 'chatbot-branding', false");
+  it("keeps uploaded documents on Laravel private storage with path validation", () => {
+    expect(storage).toContain("Storage::disk('local')");
+    expect(storage).toContain("str_contains($path, '..')");
   });
 
-  it("revokes anonymous table access and grants authenticated access explicitly", () => {
-    expect(migration).toContain("from anon;");
-    expect(migration).toContain("to authenticated;");
-    expect(migration).toContain("Data API exposure is disabled");
+  it("allowlists tables, columns, actions, and filters", () => {
+    expect(gateway).toContain("private const TABLES");
+    expect(gateway).toContain("Schema::hasColumn");
+    expect(gateway).toContain("['select', 'insert', 'update', 'delete', 'upsert']");
   });
 });

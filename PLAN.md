@@ -6,9 +6,9 @@ This repository is delivered incrementally so each phase remains deployable and 
 
 - [x] Inspect repository and select npm (no existing lockfile; requested workflow uses npm).
 - [x] Initialize Next.js App Router with strict TypeScript and Tailwind CSS.
-- [x] Add validated environment configuration and Supabase browser/server clients.
+- [x] Add validated environment configuration and Laravel API clients.
 - [x] Add secure administrator login, allowlist enforcement, protected routes, and sign-out.
-- [x] Add complete initial PostgreSQL schema, pgvector support, indexes, triggers, and RLS.
+- [x] Add complete MySQL schema, indexes, foreign keys, Laravel authorization, and Sanctum tokens.
 - [x] Implement project create, edit, pause/resume, archive, and project navigation.
 - [x] Add responsive dashboard states and accessible UI primitives.
 - [x] Add unit tests and pass lint, typecheck, tests, and production build.
@@ -55,10 +55,21 @@ Deliverable: an approved K-Labs administrator can authenticate and manage isolat
 
 - Production rate limiting, domain enforcement, security/e2e coverage, accessibility, performance, logging, deployment verification, and operational documentation.
 
+## Backend migration — Laravel and MySQL
+
+- [x] Keep the existing Next.js dashboard and public widget UI.
+- [x] Replace Supabase authentication with Laravel Sanctum.
+- [x] Replace PostgreSQL/Supabase persistence with MySQL migrations.
+- [x] Replace Supabase Storage with Laravel private filesystem storage.
+- [x] Add authenticated and internal Laravel API routes for data, storage, ingestion transactions, and vector retrieval.
+- [x] Remove Supabase packages and runtime clients.
+- [x] Add Laravel feature tests and update frontend security tests.
+- [ ] Apply the MySQL migrations after local database credentials are supplied.
+
 ## Guardrails
 
 - No public registration, subscriptions, billing, marketplace, or customer accounts.
-- Every client-owned record is project-scoped and protected by RLS.
-- Browser code never receives service-role or OpenAI credentials.
+- Every client-owned record is project-scoped and protected by Laravel authorization.
+- Browser code never receives MySQL, Laravel internal-key, or OpenAI credentials.
 - Public keys identify active widgets but never authorize direct database access.
 - AI answers use retrieved project knowledge only and fall back safely when unsupported.

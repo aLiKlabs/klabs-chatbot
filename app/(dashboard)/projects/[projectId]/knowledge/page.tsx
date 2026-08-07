@@ -3,7 +3,7 @@ import { BookOpenText, Boxes, CalendarClock, Database, File, FileQuestion, FileT
 import { ProjectHeader } from "@/components/admin/project-header";
 import { SourceActions } from "@/components/admin/source-actions";
 import { KnowledgeForms } from "@/components/forms/knowledge-forms";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/laravel/server";
 import type { KnowledgeSource, Project } from "@/types/database";
 
 function sourceIcon(type: KnowledgeSource["source_type"]) {
@@ -35,7 +35,10 @@ export default async function KnowledgePage({ params }: { params: Promise<{ proj
   const project = projectData as Project;
   const sources = (sourceData || []) as KnowledgeSource[];
   const readySources = sources.filter(({ status }) => status === "ready").length;
-  const embeddingTokens = (tokensResult.data || []).reduce((total, event) => total + (event.embedding_tokens || 0), 0);
+  const embeddingTokens = (tokensResult.data || []).reduce(
+    (total: number, event: { embedding_tokens?: number }) => total + (event.embedding_tokens || 0),
+    0,
+  );
 
   return (
     <main className="page-wrap project-page">

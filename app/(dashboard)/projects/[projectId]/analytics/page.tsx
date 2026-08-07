@@ -3,7 +3,7 @@ import { BarChart3, Bot, CircleHelp, Clock3, Coins, Database, MessageCircleQuest
 import { ProjectHeader } from "@/components/admin/project-header";
 import { UsageCalculator } from "@/components/admin/usage-calculator";
 import { averageLatency, buildDailySeries, calculateUsage, commonQuestions, commonSources, type AnalyticsMessage, type UsageRow } from "@/lib/analytics";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/laravel/server";
 import type { Project } from "@/types/database";
 
 type ConversationRow = { id: string; session_id: string; language: string | null; started_at: string };

@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { LoaderCircle, LogIn } from "lucide-react";
+import { LoaderCircle } from "lucide-react";
 import { login, type LoginState } from "@/app/actions/auth";
 
 const initialState: LoginState = {};
@@ -34,8 +34,8 @@ export function LoginForm() {
       </label>
       {state.error ? <p className="form-error" role="alert">{state.error}</p> : null}
       <button className="button button-primary button-wide" disabled={pending}>
-        {pending ? <LoaderCircle className="spin" size={18} /> : <LogIn size={18} />}
-        {pending ? "Signing in…" : "Sign in securely"}
+        {pending ? <LoaderCircle className="spin" size={18} /> : null}
+        {pending ? "Signing in…" : "Sign in"}
       </button>
     </form>
   );

@@ -1,7 +1,7 @@
 import { Bot, CheckCircle2, Database, KeyRound, LockKeyhole, ServerCog, ShieldCheck } from "lucide-react";
 import { WorkspaceSettingsForm } from "@/components/forms/workspace-settings-form";
 import { requireAdministrator } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/laravel/server";
 
 export default async function WorkspaceSettingsPage() {
   const administrator = await requireAdministrator();
@@ -12,7 +12,7 @@ export default async function WorkspaceSettingsPage() {
   ]);
   const mockMode = process.env.MOCK_EMBEDDINGS === "true";
   const runtimeItems = [
-    { label: "Database", value: "Supabase connected", Icon: Database, good: true },
+    { label: "Database", value: "MySQL via Laravel", Icon: Database, good: true },
     { label: "AI answer mode", value: mockMode ? "Free local testing" : "OpenAI enabled", Icon: Bot, good: true },
     { label: "Chat model", value: mockMode ? "Local safe fallback" : process.env.OPENAI_CHAT_MODEL || "Not configured", Icon: ServerCog, good: mockMode || Boolean(process.env.OPENAI_CHAT_MODEL) },
     { label: "Embedding model", value: mockMode ? "Local lexical retrieval" : process.env.OPENAI_EMBEDDING_MODEL || "Not configured", Icon: KeyRound, good: mockMode || Boolean(process.env.OPENAI_EMBEDDING_MODEL) },

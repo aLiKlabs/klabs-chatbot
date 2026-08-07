@@ -1,14 +1,16 @@
 import { NextResponse } from "next/server";
-import { requireAdministrator } from "@/lib/auth";
+import { getAdministrator } from "@/lib/auth";
 import { crawlWebsite } from "@/lib/crawling";
 import { processKnowledgeSource } from "@/lib/ingestion/process";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/laravel/server";
 import { crawlImportSchema } from "@/lib/validation/crawl";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request, context: { params: Promise<{ projectId: string }> }) {
-  await requireAdministrator();
+  if (!(await getAdministrator())) {
+    return NextResponse.json({ error: "Your administrator session expired. Refresh the page and sign in again." }, { status: 401 });
+  }
   const { projectId } = await context.params;
   const parsed = crawlImportSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message || "Choose at least one valid page." }, { status: 400 });
@@ -26,7 +28,8 @@ export async function POST(request: Request, context: { params: Promise<{ projec
     if (!pages.length) throw new Error("The selected pages were not available when the website was checked again.");
 
     sourceId = crypto.randomUUID();
-    const sourceName = `${new URL(crawl.startUrl).hostname} website`;
+    const crawlLanguage = new URL(crawl.startUrl).pathname.startsWith("/ar") ? "ar" : "en";
+    const sourceName = `${new URL(crawl.startUrl).hostname} ${crawlLanguage === "ar" ? "Arabic" : "English"} website`;
     const { error: sourceError } = await supabase.from("knowledge_sources").insert({
       id: sourceId,
       project_id: projectId,
@@ -34,7 +37,7 @@ export async function POST(request: Request, context: { params: Promise<{ projec
       name: sourceName,
       original_url: crawl.startUrl,
       status: "pending",
-      metadata: { crawled_pages: pages.length, crawler_version: 1 },
+      metadata: { crawled_pages: pages.length, crawler_version: 2, language: crawlLanguage },
     });
     if (sourceError) throw new Error("The website source could not be created.");
 

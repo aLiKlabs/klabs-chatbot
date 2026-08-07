@@ -1,13 +1,15 @@
 import { NextResponse } from "next/server";
-import { requireAdministrator } from "@/lib/auth";
+import { getAdministrator } from "@/lib/auth";
 import { crawlWebsite } from "@/lib/crawling";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/laravel/server";
 import { crawlPreviewSchema } from "@/lib/validation/crawl";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request, context: { params: Promise<{ projectId: string }> }) {
-  await requireAdministrator();
+  if (!(await getAdministrator())) {
+    return NextResponse.json({ error: "Your administrator session expired. Refresh the page and sign in again." }, { status: 401 });
+  }
   const { projectId } = await context.params;
   const parsed = crawlPreviewSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message || "Invalid website URL." }, { status: 400 });

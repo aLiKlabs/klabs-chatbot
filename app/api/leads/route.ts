@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { consumeWidgetRateLimit, requestAddress } from "@/lib/rate-limit/widget";
-import { createServiceClient } from "@/lib/supabase/service";
+import { createServiceClient } from "@/lib/laravel/service";
 import { leadSchema } from "@/lib/validation/widget";
 import { getPublicWidgetProject } from "@/lib/widget/project";
 

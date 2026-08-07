@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase/service";
+import { createServiceClient } from "@/lib/laravel/service";
 import { getPublicWidgetProject, isApprovedWidgetPage, localized } from "@/lib/widget/project";
 
 export const runtime = "nodejs";

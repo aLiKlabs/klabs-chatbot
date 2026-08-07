@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { updateSession } from "@/lib/supabase/proxy";
+import { updateSession } from "@/lib/laravel/proxy";
 
 export function proxy(request: NextRequest) {
   return updateSession(request);

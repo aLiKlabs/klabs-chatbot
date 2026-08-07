@@ -8,8 +8,8 @@ import {
   addManualSource,
   type KnowledgeActionState,
 } from "@/app/actions/knowledge";
-import { createClient } from "@/lib/supabase/client";
 import { WebsiteCrawler } from "@/components/forms/website-crawler";
+import { readApiPayload } from "@/lib/http/api-response";
 
 const initialState: KnowledgeActionState = {};
 
@@ -38,25 +38,20 @@ export function KnowledgeForms({ projectId, websiteUrl }: { projectId: string; w
     setUploadMessage(undefined);
     let sourceId: string | undefined;
     try {
+      const upload = new FormData();
+      upload.set("file", file);
       const prepare = await fetch(`/api/admin/projects/${projectId}/upload-url`, {
         method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ filename: file.name, mimeType: file.type, size: file.size }),
+        body: upload,
       });
-      const prepared = await prepare.json();
-      if (!prepare.ok) throw new Error(prepared.error || "The upload could not be prepared.");
+      const prepared = await readApiPayload<{ sourceId: string; error?: string }>(prepare);
       sourceId = prepared.sourceId;
-      const { error: uploadError } = await createClient()
-        .storage.from("chatbot-documents")
-        .uploadToSignedUrl(prepared.path, prepared.token, file, { contentType: file.type });
-      if (uploadError) throw uploadError;
       const processResponse = await fetch(`/api/admin/projects/${projectId}/process`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ sourceId }),
       });
-      const result = await processResponse.json();
-      if (!processResponse.ok) throw new Error(result.error || "The document could not be processed.");
+      const result = await readApiPayload<{ chunkCount: number; error?: string }>(processResponse);
       setUploadMessage({
         type: "success",
         text: `${file.name} is ready with ${result.chunkCount} knowledge chunk${result.chunkCount === 1 ? "" : "s"}.`,

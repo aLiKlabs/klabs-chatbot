@@ -3,7 +3,7 @@ import { Activity, AlertTriangle, BookOpenText, Bot, Braces, CheckCircle2, Circl
 import { setProjectStatus } from "@/app/actions/projects";
 import { ProjectHeader } from "@/components/admin/project-header";
 import { EditProjectForm } from "@/components/forms/edit-project-form";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/laravel/server";
 import type { Project } from "@/types/database";
 
 export default async function ProjectOverviewPage({ params }: { params: Promise<{ projectId: string }> }) {
@@ -36,8 +36,8 @@ export default async function ProjectOverviewPage({ params }: { params: Promise<
     ["Widget status", project.status === "active" ? "Live" : "Offline", CheckCircle2, project.status === "active" ? "teal" : "violet"],
   ] as const;
   const recentActivity = [
-    ...(recentUsage.data || []).map((item) => ({ label: item.event_type.replaceAll("_", " "), created_at: item.created_at, tone: "chat" })),
-    ...(recentJobs.data || []).map((item) => ({ label: `${item.job_type} ${item.status}`, created_at: item.created_at, tone: "knowledge" })),
+    ...(recentUsage.data || []).map((item: { event_type: string; created_at: string }) => ({ label: item.event_type.replaceAll("_", " "), created_at: item.created_at, tone: "chat" })),
+    ...(recentJobs.data || []).map((item: { job_type: string; status: string; created_at: string }) => ({ label: `${item.job_type} ${item.status}`, created_at: item.created_at, tone: "knowledge" })),
   ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 6);
 
   return (

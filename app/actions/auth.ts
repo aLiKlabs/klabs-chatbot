@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/laravel/server";
 import { isAllowedAdministrator } from "@/lib/env";
 
 export type LoginState = { error?: string };
@@ -21,7 +21,15 @@ export async function login(
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
-  if (error) return { error: "The email or password is incorrect." };
+  if (error) {
+    if (/email or password is incorrect/i.test(error.message)) {
+      return { error: "The email or password is incorrect." };
+    }
+    if (/not approved|administrator access/i.test(error.message)) {
+      return { error: "This account is not approved for K-Labs administration." };
+    }
+    return { error: "The sign-in service is temporarily unavailable. Please try again." };
+  }
   redirect("/dashboard");
 }
 

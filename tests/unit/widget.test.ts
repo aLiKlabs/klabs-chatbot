@@ -15,11 +15,13 @@ describe("public widget boundaries", () => {
 
   it("selects localized values without leaking raw objects", () => {
     expect(localized({ en: "Hello", ar: "مرحباً" }, "ar", "Fallback")).toBe("مرحباً");
+    expect(localized({ en: "Hello", ar: "" }, "ar", "مرحباً")).toBe("مرحباً");
     expect(localized({ en: "Hello" }, "fr", "Fallback")).toBe("Hello");
   });
 
   it("validates public chat identifiers and the embedding page", () => {
     expect(publicChatSchema.safeParse({ publicKey: "a".repeat(36), message: "Hello", sessionId: crypto.randomUUID(), pageUrl: "https://example.com", history: [] }).success).toBe(true);
+    expect(publicChatSchema.safeParse({ publicKey: "9xcb8z9dsstbd2xbluuhrxyeuiaugndn8wnf", message: "Hello", sessionId: crypto.randomUUID(), pageUrl: "http://localhost:5173/#contact", history: [] }).success).toBe(true);
     expect(publicChatSchema.safeParse({ publicKey: "bad", message: "Hello", sessionId: "bad", pageUrl: "file:///etc/passwd" }).success).toBe(false);
   });
 

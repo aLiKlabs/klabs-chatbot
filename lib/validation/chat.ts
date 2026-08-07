@@ -8,6 +8,7 @@ const historyMessageSchema = z.object({
 export const adminChatRequestSchema = z.object({
   message: z.string().trim().min(2, "Enter a question.").max(2_000),
   sessionId: z.string().uuid(),
+  language: z.enum(["en", "ar"]).optional(),
   history: z.array(historyMessageSchema).max(8).default([]),
 });
 

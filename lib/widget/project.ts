@@ -1,18 +1,22 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { LaravelClient } from "@/lib/laravel/client";
 
 export type LocalizedValue = Record<string, string>;
 
 export function localized(value: unknown, language: string, fallback: string) {
   if (!value || typeof value !== "object") return fallback;
   const entries = value as LocalizedValue;
-  return entries[language] || entries.en || Object.values(entries).find(Boolean) || fallback;
+  if (entries[language]?.trim()) return entries[language];
+  // Do not put English copy into an RTL Arabic widget when the optional
+  // Arabic field is empty. Use the supplied Arabic interface fallback.
+  if (language === "ar") return fallback;
+  return entries.en || Object.values(entries).find(Boolean) || fallback;
 }
 
 function comparableHost(hostname: string) {
   return hostname.toLowerCase().replace(/^www\./, "");
 }
 
-export async function getPublicWidgetProject(supabase: SupabaseClient, publicKey: string) {
+export async function getPublicWidgetProject(supabase: LaravelClient, publicKey: string) {
   const { data: project } = await supabase
     .from("projects")
     .select("id,name,public_key,website_url,status,default_language,supported_languages")

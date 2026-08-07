@@ -3,7 +3,7 @@ import type { Route } from "next";
 import { notFound } from "next/navigation";
 import { CalendarDays, ChevronRight, CircleHelp, Filter, Globe2, Languages, MessageSquareText, ThumbsDown, ThumbsUp, UserRound } from "lucide-react";
 import { ProjectHeader } from "@/components/admin/project-header";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/laravel/server";
 import type { Project } from "@/types/database";
 
 type Conversation = { id: string; language: string | null; page_url: string | null; status: string; started_at: string; last_message_at: string };

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, FolderPlus, Plus, Search, Sparkles } from "lucide-react";
 import { ProjectCard } from "@/components/admin/project-card";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/laravel/server";
 import type { Project } from "@/types/database";
 
 export default async function DashboardPage() {
@@ -13,8 +13,8 @@ export default async function DashboardPage() {
     .order("updated_at", { ascending: false });
   const projects = (data ?? []) as Array<
     Project & {
-      knowledge_sources: Array<{ count: number }>;
-      conversations: Array<{ count: number }>;
+      knowledge_sources?: Array<{ count: number }>;
+      conversations?: Array<{ count: number }>;
     }
   >;
 
@@ -25,7 +25,7 @@ export default async function DashboardPage() {
         <Link className="button button-primary desktop-create" href="/projects/new"><Plus size={18} /> Create project</Link>
       </div>
 
-      {error ? <div className="notice notice-error">Projects could not be loaded. Check your Supabase connection and permissions.</div> : null}
+      {error ? <div className="notice notice-error">Projects could not be loaded. Check your Laravel API and MySQL connection.</div> : null}
 
       {projects.length ? (
         <>
@@ -38,8 +38,8 @@ export default async function DashboardPage() {
               <ProjectCard
                 key={project.id}
                 project={project}
-                sourceCount={project.knowledge_sources[0]?.count ?? 0}
-                conversationCount={project.conversations[0]?.count ?? 0}
+                sourceCount={project.knowledge_sources?.[0]?.count ?? 0}
+                conversationCount={project.conversations?.[0]?.count ?? 0}
               />
             ))}
           </div>
